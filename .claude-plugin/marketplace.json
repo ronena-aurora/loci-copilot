@@ -18,20 +18,12 @@
       "skills": [
         "./skills/char-counter"
       ],
-      "hooks": {
-        "PostToolUse": [
-          {
-            "matcher": "Edit|Write|MultiEdit",
-            "hooks": [
-              {
-                "type": "command",
-                "command": "python3 $PLUGIN_DIR/hooks/count_chars.py",
-                "timeout": 5,
-                "statusMessage": "Counting characters..."
-              }
-            ]
-          }
-        ]
+      "hooks": "./hooks/hooks.json",
+      "mcpServers": {
+        "loci": {
+          "type": "http",
+          "url": "https://dev.local.mcp.loci-dev.net/mcp"
+        }
       }
     }
   ]
