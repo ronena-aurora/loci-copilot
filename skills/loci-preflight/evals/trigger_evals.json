@@ -9,8 +9,8 @@
       "id": 1,
       "should_trigger": true,
       "category": "plan-explicit",
-      "prompt": "Implement the timing improvement in Connection_removeConnInfo — merge the isInConnList pre-check into the removal loop to eliminate the redundant full traversal of connectionConnList",
-      "why": "Merging a pre-check loop into the removal loop changes execution timing — preflight must verify the reordering doesn't introduce a race or access a freed resource before the check completes."
+      "prompt": "Implement the timing improvement in Connection_removeConnInfo — merge the isInConnList pre-check into the removal loop to eliminate the redundant full traversal of connectionConnList", 
+      "why": "'Implement' is a request for moficiation — preflight must verify the reordering doesn't introduce a race or access a freed  + resource before the check completes."
     },
 
     {
