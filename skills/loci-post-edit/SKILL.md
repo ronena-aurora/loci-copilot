@@ -1,5 +1,5 @@
 ---
-name: loci-post-review
+name: loci-post-edit
 description: >
   Post-change safety review: after a code agent writes or edits code, run the
   same three loci-preflight checks (call graph ordering, arithmetic ranges,
@@ -12,7 +12,7 @@ description: >
   offer to run this review.
 ---
 
-# loci-post-review
+# loci-post-edit
 
 This skill applies the loci-preflight three-check framework to code that has
 *already been written* — reviewing what the agent produced rather than
