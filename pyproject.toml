@@ -1,0 +1,24 @@
+[project]
+name = "loci-plugin"
+version = "0.0.1"
+description = "Claude Code plugin for C/C++ safety analysis and execution-aware instrumentation"
+requires-python = ">=3.12"
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+    "pytest-timeout>=2.2",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "unit: pure logic tests, no external deps",
+    "integration: requires real ELF files and asmslicer",
+    "regression: baseline comparison tests",
+    "mcp: requires MCP server network access",
+    "slow: tests that take >10 seconds",
+    "ble: requires BLE project",
+]
+timeout = 120
+addopts = "-v --tb=short"
