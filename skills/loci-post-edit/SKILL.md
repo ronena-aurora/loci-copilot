@@ -1,143 +1,168 @@
 ---
 name: loci-post-edit
 description: >
-  Post-change safety review: after a code agent writes or edits code, run the
-  same three loci-preflight checks (call graph ordering, arithmetic ranges,
-  freed-resource access) against the actual diff to verify execution fit.
-  Invoke whenever the user says "review what the agent did", "check the
-  changes", "post-review", "did the agent get it right", "verify the edit",
-  or any time a write/edit session has just completed and the user wants
-  confirmation before committing. Do not wait to be asked explicitly — if the
-  context makes it clear that an agent just finished writing code, proactively
-  offer to run this review.
+  Post-edit execution analysis: after code changes, compare pre-edit and
+  post-edit compiled artifacts to report execution timing % diff, energy
+  consumption, and control-flow analysis for all modified/added functions.
+  Invoke when the user says "analyze the change", "measure the edit",
+  "post-edit", "compare before/after", "timing diff", or any time the user
+  wants execution-level feedback on a code change. No safety checks — those
+  stay in loci-preflight.
 ---
 
 # loci-post-edit
 
-This skill applies the loci-preflight three-check framework to code that has
-*already been written* — reviewing what the agent produced rather than
-planning what to write. Think of it as the verification pass that closes the
-write loop.
+This skill merges execution-trace (timing/energy) and control-flow (CFG)
+analysis into a single post-edit report. It compares pre-edit and post-edit
+compiled artifacts to show exactly how the change affects hardware execution.
 
-## When to run
+## Step 0: Check session context
 
-Run immediately after a code-agent write/edit session completes, before the
-user commits or continues:
-
-1. Agent finishes its edits
-2. **← run post-review here**
-3. Address any findings
-4. Commit (or continue)
-
-## Step 1: Get the diff
-
-Obtain the changed code. Prefer the narrowest scope that covers the session:
-
-```bash
-# Unstaged + staged changes (most common after an agent session)
-git diff HEAD
-
-# Or just staged
-git diff --cached
-```
-
-If `git diff` is empty but files were clearly changed (e.g. new files written),
-read those files directly. Extract every function body that was added or
-modified.
-
-## Step 2: Apply the three checks to each changed function
-
-For each function that appears in the diff, run the same reasoning as
-loci-preflight. Work through all three checks before moving to the next
-function.
-
-### Check 1 — Call graph ordering (CFI)
-
-*Is the call sequence valid as written?*
-
-- Does the function call anything that isn't declared/defined before this point
-  in the translation unit? Flag missing forward declarations.
-- Does the function call itself (directly or via a short chain) without a
-  reachable base case? Flag unbounded recursion.
-- Is there a call-order assumption (e.g. must run after `init()`) that isn't
-  enforced in code? Flag the assumption.
-- Any static/global initializer calling across translation-unit boundaries?
-  Flag initialization-order risk.
-- If `mcp__loci__*` tools are available, query the live call graph for the
-  symbol to confirm real callee edges rather than guessing.
-
-### Check 2 — Arithmetic ranges
-
-*Can any expression produce an out-of-range value?*
-
-- **Overflow**: signed multiplication or addition with unbounded inputs?
-- **Unsigned wrap**: subtraction on `size_t` or `unsigned` that could reach
-  zero? (`size_t n = x - 1` when x == 0 wraps to SIZE_MAX.)
-- **Shift hazards**: shift amount ≥ bit-width of the type; shifting a negative
-  signed value.
-- **Signed/unsigned mix**: comparison or arithmetic combining signed and
-  unsigned without an explicit cast.
-- **Array index**: is every index statically bounded or guarded before use?
-
-### Check 3 — Freed-resource access
-
-*Is every resource lifetime respected across all control-flow paths?*
-
-- **Use-after-free**: is there any path (including error paths) that reads or
-  writes a pointer after it has been deleted/freed?
-- **Double-free**: can two paths both free the same resource?
-- **Dangling reference**: does the function return a reference or pointer to a
-  local? Store a raw pointer to a temporary?
-- **RAII gap**: does every exit path (return, throw, early-return) release
-  every resource acquired mid-function?
-- **Post-move use**: after `std::move(x)`, is `x` read without reassignment?
-
-## Step 3: Emit the report
-
-For each changed function, emit one block using this format:
+Read architecture and compiler from the LOCI session context (the
+`system-reminder` block emitted at session start). Look for:
 
 ```
-## Post-Review: <FunctionName>
-
-Call graph:  [OK | ⚠ RISK <detail> | ✗ BLOCK <detail>]
-Arithmetic:  [OK | ⚠ RISK <detail> | ✗ BLOCK <detail>]
-Resources:   [OK | ⚠ RISK <detail> | ✗ BLOCK <detail>]
-
-Verdict: APPROVE | FLAG | REVERT
-→ <one sentence: what needs to change, if anything>
+Target: <target>, Compiler: <compiler>, Build: <build>
+LOCI target: <loci_target>
 ```
 
-All-clear shorthand (use when all three checks pass for all functions):
+Map the LOCI target to a supported backend:
 
-```
-Post-review: all changed functions pass — execution fit confirmed. APPROVE.
-```
-
-### Verdict criteria
-
-| Verdict | When to use |
+| LOCI target | Backend |
 |---|---|
-| **APPROVE** | All checks pass across all changed functions |
-| **FLAG** | One or more ⚠ RISK findings; code may work but needs attention before shipping |
-| **REVERT** | One or more ✗ BLOCK findings; the change is likely wrong as written |
+| aarch64 | CortexA53Downstream |
+| armv7e-m | CortexM4Downstream |
+| armv6-m | CortexM0PlusDownstream |
+| tc399 | TC399Downstream |
 
-## Step 4: Follow through on findings
+If the architecture is **not** in this table, emit and stop:
 
-A FLAG or REVERT verdict means action is needed — don't just report and move on:
+```
+!! Architecture <arch> is not supported by LOCI.
+Supported: aarch64 (Cortex-A53), armv7e-m (Cortex-M4), armv6-m (Cortex-M0+), tc399 (TriCore TC399)
+```
 
-- **FLAG**: describe the risk clearly and offer a fix. Let the user decide
-  whether to fix now or accept the risk consciously.
-- **REVERT**: explain what is wrong, propose the corrected version, and wait
-  for the user to confirm before making any further edits.
+If no compiler was detected, inform the user and stop.
 
-## Using LOCI data
+Do **not** re-run detection scripts — use the values already in the session context.
 
-If `mcp__loci__*` tools are available, use them during the review:
+## Step 1: Identify pre-edit and post-edit artifacts
 
-1. Query the call graph for each changed symbol to confirm real callee edges.
-2. Check response-time data: if a changed function is on a hot path, flag a
-   latency regression risk even if the logic is correct.
-3. After a REVERT+fix cycle, consider running exec-trace on the repaired
-   function to confirm the fix didn't introduce a timing regression.
+The user provides or points to both pre-edit and post-edit `.o` or binary files.
+These may be:
+- Two `.o` files (e.g. `func.o.prev` and `func.o`)
+- Two binaries/ELFs
+- A single post-edit artifact (no pre-edit available)
 
-If LOCI is unavailable, note "(static analysis only)" in the report.
+If no pre-edit artifact exists, proceed with absolute timing only (no % diff).
+If no artifacts exist at all, note "(no binary)" and stop.
+
+## Step 2: diff-elfs — find modified/added functions
+
+Use the asm-analyze command from the LOCI session context:
+
+```
+<asm-analyze-cmd> diff-elfs --elf-path <pre.o> --comparing-elf-path <post.o> --arch <loci_target>
+```
+
+This returns lists of `modified` and `added` functions. Only these functions
+need analysis — skip unchanged code entirely.
+
+If there is no pre-edit artifact, treat all functions in the post-edit artifact
+as "added".
+
+## Step 3: extract-assembly (pre + post)
+
+For **modified** functions, extract assembly from both artifacts:
+
+```
+<asm-analyze-cmd> extract-assembly --elf-path <pre.o> --functions <func1>,<func2> --arch <loci_target>
+<asm-analyze-cmd> extract-assembly --elf-path <post.o> --functions <func1>,<func2> --arch <loci_target>
+```
+
+For **added** functions, extract from post-edit only:
+
+```
+<asm-analyze-cmd> extract-assembly --elf-path <post.o> --functions <new_func> --arch <loci_target>
+```
+
+The JSON output contains `timing_csv` and `timing_architecture` fields needed
+for the MCP call.
+
+## Step 4: extract-cfg from post for all changed/added functions
+
+```
+<asm-analyze-cmd> extract-cfg --elf-path <post.o> --functions <all_changed_funcs> --arch <loci_target>
+```
+
+The output is text-format CFG optimized for LLM analysis.
+
+## Step 5: LOCI MCP timing — compute % diff
+
+Call `mcp__loci-plugin__get_assembly_block_exec_behavior` with:
+- `csv_text`: the `timing_csv` value from step 3
+- `architecture`: the `timing_architecture` value from step 3
+
+Do this for both pre-edit and post-edit assembly of modified functions, and
+for post-edit only of added functions.
+
+From the MCP response, compute:
+- **Happy path** = `execution_time_ns` - `std_dev`
+- **Worst path** = `execution_time_ns` + `std_dev`
+- **Energy** = `energy_ws` (report in uWs)
+
+For modified functions, compute % diff:
+```
+diff_pct = ((post_value - pre_value) / pre_value) * 100
+```
+
+### Graceful degradation
+
+- **LOCI MCP unavailable** — report CFG analysis only, note "(timing unavailable — MCP not connected)"
+- **No pre-edit artifact** — report absolute timing only, no % diff
+
+## Step 6: Emit report
+
+### Modified functions
+
+```
+## Post-Edit: <FunctionName>
+
+### Execution (<loci_target>)
+                  Before          After           Diff
+Happy path:   XXX.XX ns       XXX.XX ns       +X.X% | -X.X%
+Worst path:   XXX.XX ns       XXX.XX ns       +X.X% | -X.X%
+Energy:       XXX.XX uWs      XXX.XX uWs      +X.X% | -X.X%
+
+### Control Flow
+<brief CFG analysis from step 4>
+```
+
+### New/added functions
+
+```
+## Post-Edit: <FunctionName> (NEW)
+
+### Execution (<loci_target>)
+Happy path:   XXX.XX ns
+Worst path:   XXX.XX ns
+Energy:       XXX.XX uWs
+
+### Control Flow
+<CFG analysis from step 4>
+```
+
+### No pre-edit artifact (absolute only)
+
+```
+## Post-Edit: <FunctionName>
+
+### Execution (<loci_target>)
+Happy path:   XXX.XX ns
+Worst path:   XXX.XX ns
+Energy:       XXX.XX uWs
+(no pre-edit artifact — showing absolute values only)
+
+### Control Flow
+<CFG analysis>
+```
