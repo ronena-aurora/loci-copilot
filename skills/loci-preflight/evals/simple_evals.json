@@ -145,8 +145,8 @@
       "id": 9,
       "should_trigger": false,
       "category": "search-callers",
-      "prompt": "Show me all callers of GAPBondMgr_ProcessEvent in the BLE project.",
-      "expected_output": "A list of callers found by searching the codebase — no preflight block.",
+      "prompt": "/plan Show me the body of OAD_processQueue — I want to understand it before we make changes.",
+      "expected_output": "A read-only display of the function body — no preflight block despite /plan prefix.",
       "files": [],
       "assertions": [
         {
