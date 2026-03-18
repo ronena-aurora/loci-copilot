@@ -9,7 +9,7 @@
       "id": 1,
       "should_trigger": true,
       "category": "plan-explicit",
-      "prompt": "Implement the timing improvement in Connection_removeConnInfo — merge the isInConnList pre-check into the removal loop to eliminate the redundant full traversal of connectionConnList", 
+      "prompt": "/plan Implement the timing improvement in Connection_removeConnInfo — merge the isInConnList pre-check into the removal loop to eliminate the redundant full traversal of connectionConnList", 
       "why": "'Implement' is a request for moficiation — preflight must verify the reordering doesn't introduce a race or access a freed  + resource before the check completes."
     },
 
@@ -17,7 +17,7 @@
       "id": 2,
       "should_trigger": true,
       "category": "plan-explicit",
-      "prompt": "How should I implement the retry logic in BLE_RadioIRQHandler? I want it to retry once on allocation failure.",
+      "prompt": "/plan How should I implement the retry logic in BLE_RadioIRQHandler? I want it to retry once on allocation failure.",
       "why": "'How should I implement' is a planning phrase that precedes writing."
     },
 
@@ -25,7 +25,7 @@
       "id": 3,
       "should_trigger": true,
       "category": "modify-direct",
-      "prompt": "Modify connection_close to return the connection handle on success instead of 0.",
+      "prompt": "/plan Modify connection_close to return the connection handle on success instead of 0.",
       "why": "Direct 'modify function' request — must run preflight before editing."
     },
 
@@ -33,7 +33,7 @@
       "id": 4,
       "should_trigger": true,
       "category": "modify-direct",
-      "prompt": "Change adc_raw_to_mv to use uint32_t for the intermediate multiplication so it doesn't overflow.",
+      "prompt": "/plan Change adc_raw_to_mv to use uint32_t for the intermediate multiplication so it doesn't overflow.",
       "why": "'Change function' — even though the fix is known, preflight should confirm no new risks."
     },
 
@@ -41,7 +41,7 @@
       "id": 5,
       "should_trigger": true,
       "category": "performance-optimization",
-      "prompt": "Make clock_setup faster. The prescaler write and the enable write are two separate bus transactions — can we merge them?",
+      "prompt": "/plan Make clock_setup faster. The prescaler write and the enable write are two separate bus transactions — can we merge them?",
       "why": "Performance optimization with a specific mechanism — preflight checks execution fit."
     },
 
@@ -49,7 +49,7 @@
       "id": 6,
       "should_trigger": true,
       "category": "performance-optimization",
-      "prompt": "I need to reduce the execution time of Connection_assessConnQuality. It's on the BLE event path and costs too many cycles.",
+      "prompt": "/plan I need to reduce the execution time of Connection_assessConnQuality. It's on the BLE event path and costs too many cycles.",
       "why": "Latency reduction on a hot-path function — preflight needed before any edit."
     },
 
@@ -57,7 +57,7 @@
       "id": 7,
       "should_trigger": true,
       "category": "new-function",
-      "prompt": "Write a function that computes the exponential moving average of RSSI samples for the connection quality module.",
+      "prompt": "/plan Write a function that computes the exponential moving average of RSSI samples for the connection quality module.",
       "why": "'Write a function' — new logic, needs CFI/arithmetic/resource checks before writing."
     },
 
@@ -65,7 +65,7 @@
       "id": 8,
       "should_trigger": true,
       "category": "new-function",
-      "prompt": "Implement a stats_reset function in packet_counter.c that zeroes all counters atomically.",
+      "prompt": "/plan Implement a stats_reset function in packet_counter.c that zeroes all counters atomically.",
       "why": "'Implement a function' — new function with atomicity requirement, preflight for ordering."
     },
 
@@ -73,7 +73,7 @@
       "id": 9,
       "should_trigger": true,
       "category": "add-behavior",
-      "prompt": "Add a timeout guard to adc_batch_average so it returns 0 and sets an error flag if count is 0.",
+      "prompt": "/plan Add a timeout guard to adc_batch_average so it returns 0 and sets an error flag if count is 0.",
       "why": "Adding a guard to an existing function — preflight checks the new control-flow path."
     },
 
@@ -81,7 +81,7 @@
       "id": 10,
       "should_trigger": true,
       "category": "add-behavior",
-      "prompt": "Add error logging to BLE_RadioIRQHandler when ble_pdu_alloc fails — we need to track allocation failures.",
+      "prompt": "/plan Add error logging to BLE_RadioIRQHandler when ble_pdu_alloc fails — we need to track allocation failures.",
       "why": "Adding a call inside an ISR — preflight checks call graph (logging from IRQ context is risky)."
     },
 
@@ -89,7 +89,7 @@
       "id": 11,
       "should_trigger": true,
       "category": "add-behavior",
-      "prompt": "Add a retry parameter to connection_find so callers can request up to N retries on a failed lookup.",
+      "prompt": "/plan Add a retry parameter to connection_find so callers can request up to N retries on a failed lookup.",
       "why": "Signature change + new loop logic — preflight checks recursion and arithmetic."
     },
 
@@ -97,7 +97,7 @@
       "id": 12,
       "should_trigger": true,
       "category": "structural-split",
-      "prompt": "Split clock_setup into two functions: one that programs the prescaler and one that waits for oscillator lock.",
+      "prompt": "/plan Split clock_setup into two functions: one that programs the prescaler and one that waits for oscillator lock.",
       "why": "Splitting a function changes call graph ordering — preflight must check both halves."
     },
 
@@ -105,7 +105,7 @@
       "id": 13,
       "should_trigger": true,
       "category": "structural-extract",
-      "prompt": "Extract the clamping logic from Connection_assessConnQuality into a private inline clamp helper.",
+      "prompt": "/plan Extract the clamping logic from Connection_assessConnQuality into a private inline clamp helper.",
       "why": "Extracting a helper introduces a new function — preflight checks it."
     },
 
@@ -113,7 +113,7 @@
       "id": 14,
       "should_trigger": true,
       "category": "structural-inline",
-      "prompt": "Inline connection_find into connection_close — it's only called from one place and the call overhead matters.",
+      "prompt": "/plan Inline connection_find into connection_close — it's only called from one place and the call overhead matters.",
       "why": "Inlining removes an abstraction boundary — preflight checks the merged control flow."
     },
 
@@ -121,7 +121,7 @@
       "id": 15,
       "should_trigger": true,
       "category": "bug-fix",
-      "prompt": "Fix the unsigned subtraction wrap in stats_update — if byte_count overflows uint16_t the summary value goes wrong.",
+      "prompt": "/plan Fix the unsigned subtraction wrap in stats_update — if byte_count overflows uint16_t the summary value goes wrong.",
       "why": "Bug fix in arithmetic path — preflight confirms the fix doesn't introduce a new risk."
     },
 
@@ -129,7 +129,7 @@
       "id": 16,
       "should_trigger": true,
       "category": "bug-fix",
-      "prompt": "Fix the potential double-free in BLE_RadioIRQHandler — s_rx_buf can be read after it's freed in the TX branch.",
+      "prompt": "/plan Fix the potential double-free in BLE_RadioIRQHandler — s_rx_buf can be read after it's freed in the TX branch.",
       "why": "Use-after-free fix — preflight maps the new ownership explicitly before any edit."
     },
 
@@ -137,7 +137,7 @@
       "id": 17,
       "should_trigger": true,
       "category": "signature-change",
-      "prompt": "Add a const qualifier to the samples pointer in adc_batch_average — the function doesn't modify the array.",
+      "prompt": "/plan Add a const qualifier to the samples pointer in adc_batch_average — the function doesn't modify the array.",
       "why": "Signature change — preflight checks for callers that may be passing non-const pointers."
     },
 
@@ -145,7 +145,7 @@
       "id": 18,
       "should_trigger": true,
       "category": "signature-change",
-      "prompt": "Change the return type of stats_update from uint16_t to uint32_t to avoid the truncation issue.",
+      "prompt": "/plan Change the return type of stats_update from uint16_t to uint32_t to avoid the truncation issue.",
       "why": "Return type change is an ABI change — preflight must check all callers."
     },
 
@@ -153,7 +153,7 @@
       "id": 19,
       "should_trigger": true,
       "category": "port-replace",
-      "prompt": "Replace the linear scan in connection_find with a hash table lookup. Keep the same signature.",
+      "prompt": "/plan Replace the linear scan in connection_find with a hash table lookup. Keep the same signature.",
       "why": "Algorithmic replacement — new data structure and control flow, preflight needed."
     },
 
@@ -161,7 +161,7 @@
       "id": 20,
       "should_trigger": true,
       "category": "port-replace",
-      "prompt": "Port adc_raw_to_mv to use the hardware FPU — replace the integer division with a float multiply.",
+      "prompt": "/plan Port adc_raw_to_mv to use the hardware FPU — replace the integer division with a float multiply.",
       "why": "Porting to a different execution unit — arithmetic range and calling convention risks."
     },
 
@@ -169,7 +169,7 @@
       "id": 21,
       "should_trigger": true,
       "category": "wrap-decorate",
-      "prompt": "Wrap connection_close with a critical section so it's safe to call from interrupt context.",
+      "prompt": "/plan Wrap connection_close with a critical section so it's safe to call from interrupt context.",
       "why": "Adding synchronisation around an existing function — preflight checks call graph from IRQ."
     },
 
@@ -177,7 +177,7 @@
       "id": 22,
       "should_trigger": true,
       "category": "wrap-decorate",
-      "prompt": "Add RAII ownership to the rx buffer in BLE_RadioIRQHandler instead of manual free calls.",
+      "prompt": "/plan Add RAII ownership to the rx buffer in BLE_RadioIRQHandler instead of manual free calls.",
       "why": "Introducing RAII changes resource lifetime paths — preflight maps the new ownership."
     },
 
@@ -185,7 +185,7 @@
       "id": 23,
       "should_trigger": true,
       "category": "merge-functions",
-      "prompt": "Merge adc_raw_to_mv and adc_batch_average into a single adc_read_mv that reads, averages, and converts in one call.",
+      "prompt": "/plan Merge adc_raw_to_mv and adc_batch_average into a single adc_read_mv that reads, averages, and converts in one call.",
       "why": "Merging two functions — combined arithmetic and resource surface needs preflight."
     },
 
@@ -193,7 +193,7 @@
       "id": 24,
       "should_trigger": true,
       "category": "callback-add",
-      "prompt": "Add an on_complete callback parameter to clock_setup so callers can register a handler for oscillator-ready.",
+      "prompt": "/plan Add an on_complete callback parameter to clock_setup so callers can register a handler for oscillator-ready.",
       "why": "Adding a callback introduces an indirect call edge — preflight checks CFI and re-entrancy."
     },
 
@@ -201,7 +201,7 @@
       "id": 25,
       "should_trigger": true,
       "category": "algorithm-change",
-      "prompt": "Change the quality score formula in Connection_assessConnQuality to use a weighted sum instead of subtraction.",
+      "prompt": "/plan Change the quality score formula in Connection_assessConnQuality to use a weighted sum instead of subtraction.",
       "why": "Arithmetic formula change — preflight checks new range and overflow risk."
     },
 
@@ -209,7 +209,7 @@
       "id": 26,
       "should_trigger": false,
       "category": "read-understand",
-      "prompt": "What does clock_setup do? Walk me through the prescaler calculation.",
+      "prompt": "/plan What does clock_setup do? Walk me through the prescaler calculation.",
       "why": "Read-only understanding request — no code will be written, skill should stay quiet."
     },
 
@@ -217,7 +217,7 @@
       "id": 27,
       "should_trigger": false,
       "category": "read-understand",
-      "prompt": "Explain how BLE_RadioIRQHandler handles the TX_DONE event.",
+      "prompt": "/plan Explain how BLE_RadioIRQHandler handles the TX_DONE event.",
       "why": "Explanation only — no change planned."
     },
 
@@ -225,7 +225,7 @@
       "id": 28,
       "should_trigger": false,
       "category": "read-understand",
-      "prompt": "Show me the full body of connection_find.",
+      "prompt": "/plan Show me the full body of connection_find.",
       "why": "File read, not a code change."
     },
 
@@ -233,7 +233,7 @@
       "id": 29,
       "should_trigger": false,
       "category": "analysis-no-change",
-      "prompt": "Review Connection_assessConnQuality for potential bugs. Don't change anything yet — just tell me what you find.",
+      "prompt": "/plan Review Connection_assessConnQuality for potential bugs. Don't change anything yet — just tell me what you find.",
       "why": "'Don't change anything' is explicit — this is analysis mode, not planning mode."
     },
 
@@ -241,7 +241,7 @@
       "id": 30,
       "should_trigger": false,
       "category": "analysis-no-change",
-      "prompt": "Is adc_raw_to_mv safe to call with vref_mv = 5000? I'm not asking you to change it, just check.",
+      "prompt": "/plan Is adc_raw_to_mv safe to call with vref_mv = 5000? I'm not asking you to change it, just check.",
       "why": "Safety analysis without change intent — preflight would be premature."
     },
 
@@ -249,7 +249,7 @@
       "id": 31,
       "should_trigger": false,
       "category": "build-run",
-      "prompt": "Build the BLE project and run the unit tests.",
+      "prompt": "/plan Build the BLE project and run the unit tests.",
       "why": "Build and test execution — no function change planned."
     },
 
@@ -257,7 +257,7 @@
       "id": 32,
       "should_trigger": false,
       "category": "build-run",
-      "prompt": "Compile clock_setup.c with -O2 and show me the generated assembly.",
+      "prompt": "/plan Compile clock_setup.c with -O2 and show me the generated assembly.",
       "why": "Compile and inspect — reading the output, not writing new code."
     },
 
@@ -265,7 +265,7 @@
       "id": 33,
       "should_trigger": false,
       "category": "search-navigation",
-      "prompt": "Find all callers of connection_find in the BLE project.",
+      "prompt": "/plan Find all callers of connection_find in the BLE project.",
       "why": "Search/navigation — no code change involved."
     },
 
@@ -273,7 +273,7 @@
       "id": 34,
       "should_trigger": false,
       "category": "search-navigation",
-      "prompt": "List all functions defined in conn_manager.c.",
+      "prompt": "/plan List all functions defined in conn_manager.c.",
       "why": "File exploration — no edit intent."
     },
 
@@ -281,7 +281,7 @@
       "id": 35,
       "should_trigger": false,
       "category": "non-function-edit",
-      "prompt": "Update the Makefile to add -Wall to the compiler flags.",
+      "prompt": "/plan Update the Makefile to add -Wall to the compiler flags.",
       "why": "Makefile edit — no function body is being written."
     },
 
@@ -289,7 +289,7 @@
       "id": 36,
       "should_trigger": false,
       "category": "non-function-edit",
-      "prompt": "Add a #define CLOCK_PRESCALER_DEFAULT 5 to clock_regs.h.",
+      "prompt": "/plan Add a #define CLOCK_PRESCALER_DEFAULT 5 to clock_regs.h.",
       "why": "Adding a constant to a header — no function logic involved."
     },
 
@@ -297,7 +297,7 @@
       "id": 37,
       "should_trigger": false,
       "category": "comment-only",
-      "prompt": "Add a comment above the prescaler line in clock_setup explaining why we divide by 5.",
+      "prompt": "/plan Add a comment above the prescaler line in clock_setup explaining why we divide by 5.",
       "why": "Comment-only edit — no logic change, preflight not needed."
     },
 
@@ -305,7 +305,7 @@
       "id": 38,
       "should_trigger": false,
       "category": "git-ops",
-      "prompt": "Commit the changes to clock_setup.c with a message about the prescaler fix.",
+      "prompt": "/plan Commit the changes to clock_setup.c with a message about the prescaler fix.",
       "why": "Git operation — not a code change."
     },
 
@@ -313,7 +313,7 @@
       "id": 39,
       "should_trigger": false,
       "category": "profiling-only",
-      "prompt": "Use LOCI to measure the current execution time of clock_setup without changing anything.",
+      "prompt": "/plan Use LOCI to measure the current execution time of clock_setup without changing anything.",
       "why": "Profiling/measurement request — read-only use of LOCI, no edit planned."
     },
 
@@ -321,7 +321,7 @@
       "id": 40,
       "should_trigger": false,
       "category": "doc-only",
-      "prompt": "Generate Doxygen documentation for the functions in conn_manager.c.",
+      "prompt": "/plan Generate Doxygen documentation for the functions in conn_manager.c.",
       "why": "Documentation generation only — no code logic change."
     }
 

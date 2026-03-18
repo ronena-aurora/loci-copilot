@@ -6,7 +6,7 @@
       "id": 1,
       "name": "confirmed-improvement-clock",
       "tags": ["improvement", "timing", "happy-path"],
-      "prompt": "I changed clock_setup to use a /5 prescaler instead of /15. Can you compare the before and after?",
+      "prompt": "/plan I changed clock_setup to use a /5 prescaler instead of /15. Can you compare the before and after?",
       "setup": {
         "binary": "config/binary.json#binary.path",
         "before_state": "after_edit/fixtures/clock_setup_before.c",
@@ -36,7 +36,7 @@
       "id": 2,
       "name": "detected-regression-clock",
       "tags": ["regression", "timing", "negative"],
-      "prompt": "I updated clock_setup with a /3 prescaler for faster ticks. Does the before/after show an improvement?",
+      "prompt": "/plan I updated clock_setup with a /3 prescaler for faster ticks. Does the before/after show an improvement?",
       "setup": {
         "binary": "config/binary.json#binary.path",
         "before_state": "after_edit/fixtures/clock_setup_before.c",
@@ -66,7 +66,7 @@
       "id": 3,
       "name": "no-measurable-change",
       "tags": ["no-change", "comment-only"],
-      "prompt": "I added a comment to clock_setup explaining the prescaler formula. Does the binary show any change?",
+      "prompt": "/plan I added a comment to clock_setup explaining the prescaler formula. Does the binary show any change?",
       "setup": {
         "binary": "config/binary.json#binary.path",
         "before_state": "after_edit/fixtures/clock_setup_before.c",
@@ -95,7 +95,7 @@
       "id": 4,
       "name": "inconclusive-high-variance",
       "tags": ["inconclusive", "noise", "variance"],
-      "prompt": "I tweaked the timeout loop in clock_setup. Does the profiling show any difference?",
+      "prompt": "/plan I tweaked the timeout loop in clock_setup. Does the profiling show any difference?",
       "setup": {
         "binary": "config/binary.json#binary.path",
         "before_state": "after_edit/fixtures/clock_setup_before.c",
@@ -124,7 +124,7 @@
       "id": 5,
       "name": "exact-before-after-comparison",
       "tags": ["numerical", "exact-diff", "happy-path"],
-      "prompt": "Compare the exact cycle counts for clock_setup before and after my prescaler change.",
+      "prompt": "/plan Compare the exact cycle counts for clock_setup before and after my prescaler change.",
       "setup": {
         "binary": "config/binary.json#binary.path",
         "before_state": "after_edit/fixtures/clock_setup_before.c",
@@ -156,7 +156,7 @@
       "id": 6,
       "name": "refactor-no-perf-change",
       "tags": ["refactor", "non-perf"],
-      "prompt": "I refactored connection_close to extract a helper. Can you tell if performance changed?",
+      "prompt": "/plan I refactored connection_close to extract a helper. Can you tell if performance changed?",
       "setup": {
         "binary": "config/binary.json#binary.path",
         "before_state": "after_edit/fixtures/conn_quality_before.c",
@@ -183,7 +183,7 @@
       "id": 7,
       "name": "missing-before-state",
       "tags": ["negative", "missing-preflight"],
-      "prompt": "I just edited clock_setup. What's the improvement?",
+      "prompt": "/plan I just edited clock_setup. What's the improvement?",
       "setup": {
         "binary": "config/binary.json#binary.path",
         "before_state": null,
@@ -209,7 +209,7 @@
       "id": 8,
       "name": "multi-function-edit-mixed",
       "tags": ["multi-function", "mixed-outcome"],
-      "prompt": "I edited both clock_setup and Connection_assessConnQuality. What changed?",
+      "prompt": "/plan I edited both clock_setup and Connection_assessConnQuality. What changed?",
       "setup": {
         "binary": "config/binary.json#binary.path",
         "before_state": "multiple",
@@ -241,7 +241,7 @@
       "id": 9,
       "name": "regression-detection-conn-quality",
       "tags": ["regression", "correctness"],
-      "prompt": "I changed Connection_assessConnQuality to use integer division instead of floating-point for speed. Did it regress?",
+      "prompt": "/plan I changed Connection_assessConnQuality to use integer division instead of floating-point for speed. Did it regress?",
       "setup": {
         "binary": "config/binary.json#binary.path",
         "before_state": "after_edit/fixtures/conn_quality_before.c",
@@ -271,7 +271,7 @@
       "id": 10,
       "name": "improvement-with-exact-percentage",
       "tags": ["numerical", "percentage", "happy-path"],
-      "prompt": "What percent improvement did my clock_setup change achieve? I need the exact number for the PR description.",
+      "prompt": "/plan What percent improvement did my clock_setup change achieve? I need the exact number for the PR description.",
       "setup": {
         "binary": "config/binary.json#binary.path",
         "before_state": "after_edit/fixtures/clock_setup_before.c",
@@ -300,7 +300,7 @@
       "id": 11,
       "name": "worsened-performance-explicit",
       "tags": ["regression", "explicit-question"],
-      "prompt": "My change to clock_setup made it slower. How much worse is it?",
+      "prompt": "/plan My change to clock_setup made it slower. How much worse is it?",
       "setup": {
         "binary": "config/binary.json#binary.path",
         "before_state": "after_edit/fixtures/clock_setup_before.c",
@@ -327,7 +327,7 @@
       "id": 12,
       "name": "mixed-metric-outcome",
       "tags": ["mixed-outcome", "tradeoff"],
-      "prompt": "I optimised clock_setup for tick period but I'm worried the function itself got heavier. Can you check both?",
+      "prompt": "/plan I optimised clock_setup for tick period but I'm worried the function itself got heavier. Can you check both?",
       "setup": {
         "binary": "config/binary.json#binary.path",
         "before_state": "after_edit/fixtures/clock_setup_before.c",

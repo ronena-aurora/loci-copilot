@@ -6,7 +6,7 @@
       "id": 1,
       "name": "realistic-timing-goal",
       "tags": ["happy-path", "performance", "timing"],
-      "prompt": "Plan a change to function clock_setup in clock_setup.c to make the tick period 5ns instead of 15ns.",
+      "prompt": "/plan Plan a change to function clock_setup in clock_setup.c to make the tick period 5ns instead of 15ns.",
       "setup": {
         "binary": "config/binary.json#binary.path",
         "fixture_files": ["preflight/fixtures/clock_setup.c"],
@@ -31,7 +31,7 @@
       "id": 2,
       "name": "unrealistic-timing-goal",
       "tags": ["negative", "impossible-goal", "timing"],
-      "prompt": "Modify clock_setup to achieve a 0.1ns tick period. The hardware is a 32MHz crystal.",
+      "prompt": "/plan Modify clock_setup to achieve a 0.1ns tick period. The hardware is a 32MHz crystal.",
       "setup": {
         "binary": "config/binary.json#binary.path",
         "fixture_files": ["preflight/fixtures/clock_setup.c"],
@@ -53,7 +53,7 @@
       "id": 3,
       "name": "arithmetic-cast-risk",
       "tags": ["arithmetic", "signed-unsigned", "cast"],
-      "prompt": "Change Connection_assessConnQuality in conn_quality.c to use a weighted average instead of subtraction for the quality score.",
+      "prompt": "/plan Change Connection_assessConnQuality in conn_quality.c to use a weighted average instead of subtraction for the quality score.",
       "setup": {
         "binary": "config/binary.json#binary.path",
         "fixture_files": ["preflight/fixtures/conn_quality.c"],
@@ -76,7 +76,7 @@
       "id": 4,
       "name": "integer-overflow-adc",
       "tags": ["arithmetic", "overflow", "uint16"],
-      "prompt": "Modify adc_raw_to_mv in adc_convert.c to support a 3.6V reference instead of 3.3V.",
+      "prompt": "/plan Modify adc_raw_to_mv in adc_convert.c to support a 3.6V reference instead of 3.3V.",
       "setup": {
         "binary": "config/binary.json#binary.path",
         "fixture_files": ["preflight/fixtures/adc_convert.c"],
@@ -99,7 +99,7 @@
       "id": 5,
       "name": "shift-hazard-stats",
       "tags": ["arithmetic", "shift", "overflow"],
-      "prompt": "Modify stats_update in packet_counter.c to pack a 6-bit sequence number instead of 4-bit.",
+      "prompt": "/plan Modify stats_update in packet_counter.c to pack a 6-bit sequence number instead of 4-bit.",
       "setup": {
         "binary": "config/binary.json#binary.path",
         "fixture_files": ["preflight/fixtures/packet_counter.c"],
@@ -121,7 +121,7 @@
       "id": 6,
       "name": "resource-lifetime-irq",
       "tags": ["resources", "use-after-free", "interrupt"],
-      "prompt": "Add a retry mechanism to BLE_RadioIRQHandler in ble_irq_handler.c so that if ble_ll_process_rx fails it retries once with a fresh buffer.",
+      "prompt": "/plan Add a retry mechanism to BLE_RadioIRQHandler in ble_irq_handler.c so that if ble_ll_process_rx fails it retries once with a fresh buffer.",
       "setup": {
         "binary": "config/binary.json#binary.path",
         "fixture_files": ["preflight/fixtures/ble_irq_handler.c"],
@@ -144,7 +144,7 @@
       "id": 7,
       "name": "ambiguous-function-name",
       "tags": ["ambiguity", "symbol", "multi-file"],
-      "prompt": "Modify connection_find to improve lookup performance by using a hash table instead of linear scan.",
+      "prompt": "/plan Modify connection_find to improve lookup performance by using a hash table instead of linear scan.",
       "setup": {
         "binary": "config/binary.json#binary.path",
         "fixture_files": ["preflight/fixtures/conn_manager.c"],
@@ -167,7 +167,7 @@
       "id": 8,
       "name": "missing-function",
       "tags": ["negative", "missing-symbol"],
-      "prompt": "Plan a change to function ble_channel_map_update to reduce channel switching latency.",
+      "prompt": "/plan Plan a change to function ble_channel_map_update to reduce channel switching latency.",
       "setup": {
         "binary": "config/binary.json#binary.path",
         "fixture_files": [],
@@ -190,7 +190,7 @@
       "id": 9,
       "name": "typo-in-function-name",
       "tags": ["negative", "typo", "symbol-resolution"],
-      "prompt": "Modify conection_close in conn_manager.c to return the freed connection handle.",
+      "prompt": "/plan Modify conection_close in conn_manager.c to return the freed connection handle.",
       "setup": {
         "binary": "config/binary.json#binary.path",
         "fixture_files": ["preflight/fixtures/conn_manager.c"],
@@ -212,7 +212,7 @@
       "id": 10,
       "name": "semantic-breaking-performance-change",
       "tags": ["semantic", "correctness", "performance"],
-      "prompt": "Change Connection_assessConnQuality to return a uint8_t instead of int to save a cycle on the return instruction.",
+      "prompt": "/plan Change Connection_assessConnQuality to return a uint8_t instead of int to save a cycle on the return instruction.",
       "setup": {
         "binary": "config/binary.json#binary.path",
         "fixture_files": ["preflight/fixtures/conn_quality.c"],
@@ -234,7 +234,7 @@
       "id": 11,
       "name": "refactor-not-performance",
       "tags": ["refactor", "non-perf", "clean"],
-      "prompt": "Refactor connection_close in conn_manager.c to extract a helper that zeros the entry, so the logic is reusable.",
+      "prompt": "/plan Refactor connection_close in conn_manager.c to extract a helper that zeros the entry, so the logic is reusable.",
       "setup": {
         "binary": "config/binary.json#binary.path",
         "fixture_files": ["preflight/fixtures/conn_manager.c"],
@@ -256,7 +256,7 @@
       "id": 12,
       "name": "safe-to-proceed-all-clear",
       "tags": ["happy-path", "all-clear"],
-      "prompt": "Add a log line at the end of clock_setup that prints the configured prescaler value using a debug_printf macro.",
+      "prompt": "/plan Add a log line at the end of clock_setup that prints the configured prescaler value using a debug_printf macro.",
       "setup": {
         "binary": "config/binary.json#binary.path",
         "fixture_files": ["preflight/fixtures/clock_setup.c"],
@@ -278,7 +278,7 @@
       "id": 13,
       "name": "adjust-plan-verdict",
       "tags": ["verdict", "adjust-plan", "arithmetic"],
-      "prompt": "Modify adc_batch_average in adc_convert.c to return the average as a float for higher precision.",
+      "prompt": "/plan Modify adc_batch_average in adc_convert.c to return the average as a float for higher precision.",
       "setup": {
         "binary": "config/binary.json#binary.path",
         "fixture_files": ["preflight/fixtures/adc_convert.c"],
@@ -300,7 +300,7 @@
       "id": 14,
       "name": "stop-verdict-use-after-free",
       "tags": ["verdict", "stop", "resources", "use-after-free"],
-      "prompt": "Add a statistics increment to BLE_RadioIRQHandler after ble_ll_send_ack so we can track ACK counts.",
+      "prompt": "/plan Add a statistics increment to BLE_RadioIRQHandler after ble_ll_send_ack so we can track ACK counts.",
       "setup": {
         "binary": "config/binary.json#binary.path",
         "fixture_files": ["preflight/fixtures/ble_irq_handler.c"],

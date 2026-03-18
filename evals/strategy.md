@@ -112,7 +112,7 @@ Each `evals.json` follows the schema:
     {
       "id": <int>,
       "name": "<slug>",
-      "prompt": "<user message>",
+      "prompt": "/plan <user message>",
       "setup": {
         "binary": "<path or config ref>",
         "fixture_files": ["<relative path>"],
