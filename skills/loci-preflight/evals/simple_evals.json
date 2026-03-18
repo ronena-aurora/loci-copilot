@@ -169,6 +169,74 @@
           "description": "'Don't change anything' is explicit analysis mode — preflight would be premature"
         }
       ]
+    },
+
+    {
+      "id": 11,
+      "should_trigger": true,
+      "category": "plan-write-function",
+      "prompt": "/plan Write a function that validates a BLE connection handle before passing it to HCI_SendDataPkt — return an error code if the handle is out of range.",
+      "expected_output": "A preflight report followed by the plan — 'write a function' inside /plan must trigger preflight.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Response includes a preflight report section",
+          "description": "/plan + 'write a function' is an explicit write-intent trigger"
+        },
+        {
+          "text": "Preflight includes an arithmetic check",
+          "description": "Handle range validation involves arithmetic bounds — skill should flag or clear it"
+        }
+      ]
+    },
+
+    {
+      "id": 12,
+      "should_trigger": true,
+      "category": "plan-fix-bug",
+      "prompt": "/plan Fix the unsigned subtraction wrap in osal_mem_free when block size underflows — if the block header size exceeds the reported size the computed free size wraps to a huge number.",
+      "expected_output": "A preflight report (arithmetic: unsigned wraparound is the core risk) followed by the fix plan.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Response includes a preflight report section",
+          "description": "/plan + bug fix involving arithmetic must trigger preflight"
+        },
+        {
+          "text": "Preflight includes an arithmetic check flagging the unsigned wraparound risk",
+          "description": "The whole point of the fix is a size_t/unsigned subtraction hazard — skill must surface it"
+        }
+      ]
+    },
+
+    {
+      "id": 13,
+      "should_trigger": false,
+      "category": "plan-read-before-change",
+      "prompt": "/plan Show me how GAP_DeviceInit validates its addrMode parameter — I need to understand it before deciding what to change.",
+      "expected_output": "A read of the validation logic — no preflight block. /plan + read-only intent should stay quiet.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Response does NOT include a '## Preflight:' section",
+          "description": "/plan + explicit read-only intent ('before deciding what to change') — no new logic being written yet"
+        }
+      ]
+    },
+
+    {
+      "id": 14,
+      "should_trigger": false,
+      "category": "plan-build-run",
+      "prompt": "/plan Build the basic_ble example for LP_EM_CC2340R53 and show me the compiler warnings.",
+      "expected_output": "A build plan / command — no preflight block since no function logic is being written.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Response does NOT include a '## Preflight:' section",
+          "description": "Build/run operation — no code is being written or modified"
+        }
+      ]
     }
 
   ]
