@@ -1,0 +1,175 @@
+{
+  "skill_name": "loci-preflight",
+  "description": "Tests skill invocation on real BLE project prompts. Positive cases: plan/implement/modify/add keywords, or any plan involving new logic. Negative cases: read-only, explain, search, build ops.",
+  "ble_project_path": "/home/melisa/BLE",
+
+  "evals": [
+
+    {
+      "id": 1,
+      "should_trigger": true,
+      "category": "plan-add",
+      "prompt": "/plan Add a safe_divide(uint32_t a, uint32_t b) function that returns a / b, or 0 if b is zero.",
+      "expected_output": "A plan that includes a preflight report covering call graph, arithmetic ranges, and freed-resource access as a section before the edit steps.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Response includes a '## Preflight:' section header or 'Preflight safe_divide:' shorthand",
+          "description": "Skill must emit a preflight report when planning new function logic"
+        },
+        {
+          "text": "Response includes an 'Arithmetic:' check in the preflight output",
+          "description": "Division-by-zero is the key arithmetic risk; skill should explicitly clear or flag it"
+        },
+        {
+          "text": "The preflight section appears before any code or edit steps",
+          "description": "Skill specifies: emit the report before describing what you will write"
+        }
+      ]
+    },
+
+    {
+      "id": 2,
+      "should_trigger": false,
+      "category": "read-understand",
+      "prompt": "/plan Explain what connection_find does and list its callers.",
+      "expected_output": "A read-only explanation of the function — no preflight block.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Response does NOT include a '## Preflight:' section or 'Preflight connection_find:' line",
+          "description": "Read-only request — no new logic is being written, skill should stay quiet"
+        }
+      ]
+    },
+
+    {
+      "id": 3,
+      "should_trigger": true,
+      "category": "implement-keyword",
+      "prompt": "Implement a retry loop inside HCI_SendDataPkt in /home/melisa/BLE/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c that retries up to 3 times if the connection handle is invalid before returning an error.",
+      "expected_output": "A preflight report covering call graph ordering, arithmetic ranges (loop counter, retry count), and resource access — followed by the implementation plan.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Response includes a preflight report (either '## Preflight:' header or 'Preflight HCI_SendDataPkt:' shorthand)",
+          "description": "'Implement' keyword + new loop logic should trigger preflight"
+        },
+        {
+          "text": "Preflight report appears before the code or edit steps",
+          "description": "Skill rule: preflight during planning, not after writing"
+        }
+      ]
+    },
+
+    {
+      "id": 4,
+      "should_trigger": true,
+      "category": "modify-keyword",
+      "prompt": "How should I modify Connection_getConnIndex in /home/melisa/BLE/examples/rtos/LP_EM_CC2340R53/ble5stack/basic_ble_profiles/app/app_connection.c to return -1 instead of 0 when no connection is found, so callers can distinguish between index 0 and not-found?",
+      "expected_output": "A preflight report followed by a plan for the signature/logic change.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Response includes a preflight report section",
+          "description": "'How should I modify' is a planning phrase that precedes writing"
+        }
+      ]
+    },
+
+    {
+      "id": 5,
+      "should_trigger": true,
+      "category": "add-method",
+      "prompt": "Add a method to GAPBondMgr_FindAddr in /home/melisa/BLE/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c that also returns the bond index as an output parameter alongside the existing return value.",
+      "expected_output": "A preflight report covering the signature change, call graph impact on existing callers, and any arithmetic/resource concerns.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Response includes a preflight report section",
+          "description": "'Add a method' / signature change with new output parameter requires preflight"
+        }
+      ]
+    },
+
+    {
+      "id": 6,
+      "should_trigger": true,
+      "category": "plan-new-logic",
+      "prompt": "/plan Add exponential backoff to the connection parameter update retry logic in app_connection.c. Each retry should double the wait interval up to a cap of 10 seconds.",
+      "expected_output": "A preflight report (especially arithmetic: overflow risk on doubling intervals) followed by plan steps.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Response includes a preflight report section",
+          "description": "/plan + new arithmetic logic (exponential doubling) must trigger preflight"
+        },
+        {
+          "text": "Preflight includes an arithmetic check",
+          "description": "Doubling a value up to a cap is a classic overflow/range risk"
+        }
+      ]
+    },
+
+    {
+      "id": 7,
+      "should_trigger": true,
+      "category": "thinking-mode",
+      "prompt": "Think through how to add a watchdog reset inside OAD_processQueue in /home/melisa/BLE/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/profiles/oad/cc26xx/oad.c if the queue has been stalled for more than 30 seconds.",
+      "expected_output": "A preflight report covering call graph (watchdog API call from within OAD queue processing), resource concerns, and arithmetic (timer overflow) — then the approach.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Response includes a preflight report section",
+          "description": "'Think through how to add' is thinking/planning mode with new logic — skill must fire"
+        }
+      ]
+    },
+
+    {
+      "id": 8,
+      "should_trigger": false,
+      "category": "read-explain",
+      "prompt": "What parameters does GAP_DeviceInit take and what does each one do? I'm trying to understand the initialization flow.",
+      "expected_output": "A parameter-by-parameter explanation of GAP_DeviceInit — no preflight block.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Response does NOT include a '## Preflight:' section",
+          "description": "Pure explanation request — no code change intended, skill must stay quiet"
+        }
+      ]
+    },
+
+    {
+      "id": 9,
+      "should_trigger": false,
+      "category": "search-callers",
+      "prompt": "/plan Show me all callers of GAPBondMgr_ProcessEvent in the BLE project.",
+      "expected_output": "A list of callers found by searching the codebase — no preflight block.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Response does NOT include a '## Preflight:' section",
+          "description": "Caller search is navigation-only, no function logic being written"
+        }
+      ]
+    },
+
+    {
+      "id": 10,
+      "should_trigger": false,
+      "category": "analysis-no-change",
+      "prompt": "Review OAD_open in /home/melisa/BLE/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/profiles/oad/cc26xx/oad.c for potential issues. Don't change anything yet — just tell me what you find.",
+      "expected_output": "A code review with observations — no preflight block since no change is planned.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Response does NOT include a '## Preflight:' section",
+          "description": "'Don't change anything' is explicit analysis mode — preflight would be premature"
+        }
+      ]
+    }
+
+  ]
+}
