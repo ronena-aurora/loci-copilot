@@ -26,20 +26,20 @@ Target: <target>, Compiler: <compiler>, Build: <build>
 LOCI target: <loci_target>
 ```
 
-Map the LOCI target to a supported backend:
+Map the LOCI target to loci MCP suported architectues and binary targets:
 
-| LOCI target | Backend |
+| LOCI target |   Time from CPU  |
 |---|---|
-| aarch64 | CortexA53Downstream |
-| armv7e-m | CortexM4Downstream |
-| armv6-m | CortexM0PlusDownstream |
-| tc399 | TC399Downstream |
+| aarch64 | A53 |
+| armv7e-m | CortexM4|
+| armv6-m | CortexM0P |
+| tc3xx | TC399 |
 
 If the architecture is **not** in this table, emit and stop:
 
 ```
-!! Architecture <arch> is not supported by LOCI.
-Supported: aarch64 (Cortex-A53), armv7e-m (Cortex-M4), armv6-m (Cortex-M0+), tc399 (TriCore TC399)
+
+Supported: aarch64 , armv7e-m , armv6-m , tc3xx 
 ```
 
 If no compiler was detected, inform the user and stop.
