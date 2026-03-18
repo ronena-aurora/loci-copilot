@@ -463,11 +463,14 @@ def extract_assembly(elf_path: str, functions: list[str] | None = None,
             writer.writerow([fname, asm])
         timing_csv = csv_buf.getvalue()
 
+    cfg_text = get_cfg_text(detected_arch, files, functions)
+
     output = {
         "architecture": detected_arch,
         "timing_architecture": timing_arch(detected_arch) if detected_arch else None,
         "functions": functions_out,
         "timing_csv": timing_csv,
+        "control_flow_graph": cfg_text,
     }
     if blocks_file and blocks_text:
         output["blocks_file"] = blocks_file
@@ -572,25 +575,28 @@ def extract_cfg(elf_path, architecture, functions):
     detected_arch = result["arch"]
     files = result["files"]
 
-    blocks_text = files.get("blocks")
+    cfg_text = get_cfg_text(detected_arch, files, functions)
+    print(cfg_text)
+    return "success"
 
+
+def get_cfg_text(detected_arch, files, functions):
+    blocks_text = files.get("blocks")
     string_io_object = io.StringIO(blocks_text.strip())  # strip() removes leading/trailing whitespace
     functions_list = []
-    if functions is not None and functions != "":
+    if functions is not None and type(functions) is list:
+        functions_list = functions
+    elif functions is not None and functions != "":
         functions_list = functions.split(",")
-
     # Load the data into a DataFrame
     df = pd.read_csv(string_io_object, sep=',')
-
     from loci.service.asmslicer.cfg_formatter import df_to_cfg_text
-
-    df_to_cfg_text(
+    cfg_text = df_to_cfg_text(
         work=df,
         functions=functions_list,
         arch=detected_arch,
     )
-
-    return "success"
+    return cfg_text
 
 
 def main():

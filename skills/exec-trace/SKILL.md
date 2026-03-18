@@ -5,13 +5,14 @@ disable-model-invocation: true
 
 # LOCI Timing Analysis
 
-Use the asm-analyze command from the LOCI session context (shown at session start as `asm-analyze command: <path>`).
+Use the asm-analyze command which is a python script from lib/asm_analyze.py in the plugin dir, also use the python version from .venv folder in the plugin dir.
 
-For example, to extract assembly for a function called `apply_filter` from `filter.elf`:
+For example, to extract assembly for a functions called `function_1` and `function_2` from `filter.elf`:
 ```
-<asm-analyze-cmd> extract-assembly --elf-path filter.elf --functions apply_filter
+<asm-analyze-cmd> extract-assembly --elf-path filter.elf --functions function_1,function_2
 ```
-The output is JSON. Use the `timing_csv` and `timing_architecture` fields from it in step 3.
+The output is JSON. Use the `timing_csv`, and `timing_architecture` fields from it in step 3.
+Use the `control_flow_graph` field when generating analysis results.
 
 ## Step 0: Resolve Architecture and Toolchain
 
@@ -69,4 +70,8 @@ If no `.o` exists yet, fall through to full compilation.
    - `csv_text`: the `timing_csv` value from step 2's JSON output
    - `architecture`: the `timing_architecture` value from step 2's JSON output
 4. Report execution time and standard deviation in microseconds, and energy consumption in Watt-seconds (`energy_ws`)
-5. When reporting results, note that these measurements come from LOCI's LCLM trained on real HW traces — they reflect actual silicon behavior on the target board, not theoretical IPC estimates. High std_dev indicates the assembly pattern is underrepresented in the training data; low std_dev means strong empirical backing.
+5. When reporting results, 
+   - note that these measurements come from LOCI's LCLM trained on real HW traces — they reflect actual silicon behavior on the target board, not theoretical IPC estimates. 
+   - High std_dev indicates the assembly pattern is underrepresented in the training data; low std_dev means strong empirical backing.
+   - using the annotated CFG (Control Flow Graphs) from the `control_flow_graph` field from step 2, select a most likely execution path to do performance analysis on with the timing data.  
+
