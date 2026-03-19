@@ -73,5 +73,6 @@ If no `.o` exists yet, fall through to full compilation.
 5. When reporting results, 
    - note that these measurements come from LOCI's LCLM trained on real HW traces — they reflect actual silicon behavior on the target board, not theoretical IPC estimates. 
    - High std_dev indicates the assembly pattern is underrepresented in the training data; low std_dev means strong empirical backing.
-   - using the annotated CFG (Control Flow Graphs) from the `control_flow_graph` field from step 2, select a most likely execution path to do performance analysis on with the timing data.  
+   - using the annotated CFG (Control Flow Graphs) from the `control_flow_graph` field from step 2, select a most likely execution path to do performance analysis on with the timing data.
+   - highlight the hottest blocks in source code if source code info is available in the annotated CFG s
 

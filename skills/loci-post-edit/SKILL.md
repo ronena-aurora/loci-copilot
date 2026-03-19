@@ -59,7 +59,8 @@ If no artifacts exist at all, note "(no binary)" and stop.
 
 ## Step 2: diff-elfs — find modified/added functions
 
-Use the asm-analyze command from the LOCI session context:
+Use the asm-analyze command, which is a python script from lib/asm_analyze.py in the plugin dir.
+Use the python version from .venv folder in the plugin dir for running python scripts.
 
 ```
 <asm-analyze-cmd> diff-elfs --elf-path <pre.o> --comparing-elf-path <post.o> --arch <loci_target>
@@ -88,16 +89,9 @@ For **added** functions, extract from post-edit only:
 
 The JSON output contains `timing_csv` and `timing_architecture` fields needed
 for the MCP call.
+The JSON also contains the `control_flow_graph` field that contains annotated CFG's in text-format optimized for LLM analysis.
 
-## Step 4: extract-cfg from post for all changed/added functions
-
-```
-<asm-analyze-cmd> extract-cfg --elf-path <post.o> --functions <all_changed_funcs> --arch <loci_target>
-```
-
-The output is text-format CFG optimized for LLM analysis.
-
-## Step 5: LOCI MCP timing — compute % diff
+## Step 4: LOCI MCP timing — compute % diff
 
 Call `mcp__loci-plugin__get_assembly_block_exec_behavior` with:
 - `csv_text`: the `timing_csv` value from step 3
@@ -106,7 +100,7 @@ Call `mcp__loci-plugin__get_assembly_block_exec_behavior` with:
 Do this for both pre-edit and post-edit assembly of modified functions, and
 for post-edit only of added functions.
 
-From the MCP response, compute:
+From the MCP response and also using the annotated CFG's from step 3, compute:
 - **Happy path** = `execution_time_ns` - `std_dev`
 - **Worst path** = `execution_time_ns` + `std_dev`
 - **Energy** = `energy_ws` (report in uWs)
@@ -121,7 +115,7 @@ diff_pct = ((post_value - pre_value) / pre_value) * 100
 - **LOCI MCP unavailable** — report CFG analysis only, note "(timing unavailable — MCP not connected)"
 - **No pre-edit artifact** — report absolute timing only, no % diff
 
-## Step 6: Emit report
+## Step 5: Emit report
 
 ### Modified functions
 
