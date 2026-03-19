@@ -1,15 +1,15 @@
 ---
 name: loci-preflight
 description: >
-  Pre-execution safety thinking: before writing or editing any function, reason
-  through call graph ordering (CFI), arithmetic ranges, and freed-resource
-  access to see the execution fit before touching the code. Run this during
-  planning — not at write time. Invoke when the user says "write a function
-  that...", "implement...", "add a method for...", "how should I...", or any
-  time you are about to form a plan that involves writing new logic. Also invoke
-  during /plan or thinking mode. Do not wait until you are at the keyboard —
-  the point is to catch ordering, range, and resource problems while the design
-  is still cheap to change.
+  Pre-execution safety thinking: before writing or editing any function, run
+  control-flow analysis on existing callees, check arithmetic ranges, and
+  verify freed-resource access to see the execution fit before touching the
+  code. Run this during planning — not at write time. Invoke when the user says
+  "write a function that...", "implement...", "add a method for...", "how should
+  I...", or any time you are about to form a plan that involves writing new
+  logic. Also invoke during /plan or thinking mode. Do not wait until you are at
+  the keyboard — the point is to catch ordering, range, and resource problems
+  while the design is still cheap to change.
 ---
 
 # loci-preflight
@@ -32,23 +32,65 @@ what function(s) you need to write and before you issue any Edit/Write call:
 If you are in `/plan` mode or generating a step-by-step approach, include the
 preflight report as a section of the plan before listing the edit steps.
 
-## The three checks
+## The checks
 
-### 1. Call graph ordering (CFI)
-*Will the call sequence be valid when this code runs?*
+### 1. Call graph (CFG analysis)
+*What does the assembly-level control flow of the callees actually look like?*
 
-Before writing, trace the call graph forward from the new function:
-- Which functions will this call? Are they already declared/defined in this TU?
-  If not, note where forward declarations need to go.
-- Can this call path reach itself (direct or indirect recursion) without a
-  reachable base case? Flag unbounded recursion.
-- What is the intended call order at the call site — who calls this function,
-  and is there any ordering assumption (e.g. must be called after `init()`)?
-  If yes, is that enforced, or just assumed?
-- Static/global objects: will this be called during static initialization?
-  If another TU's object is involved, initialization order is undefined.
-- If LOCI MCP is available (`mcp__loci__*`), query the live call graph for the
-  symbol. Use real callee edges and response-time data rather than guessing.
+Use the `asm-analyze` command from the LOCI session context. The goal is to
+analyze existing compiled callees — functions the new code will call — before
+writing anything. Follow the control-flow skill's workflow:
+
+**Resolve architecture and toolchain** — in this order:
+1. **User's own binary** — if already compiled, reuse it. Skip to CFG extraction.
+2. **Incremental objects** — check `.loci-build/<arch>/` for existing `.o` files.
+3. **Any ELF/object in the project** — scan for `.elf`, `.out`, `.o`, `.axf`.
+4. **No binary** — cross-compile the relevant source file to get a binary, then
+   extract. Default to aarch64 if the user hasn't specified a target:
+
+   | Architecture | Compiler | Flags | Build dir |
+   |---|---|---|---|
+   | aarch64 | `aarch64-linux-gnu-g++` | `-O2 -march=armv8-a` | `.loci-build/aarch64/` |
+   | cortexm | `arm-none-eabi-g++` | `-O2 -mcpu=cortex-m4 -mthumb` | `.loci-build/cortexm/` |
+   | tricore | `tricore-elf-g++` | `-O2 -mcpu=tc3xx` | `.loci-build/tricore/` |
+
+**Incremental path (preferred)** — if a previous `.o` exists:
+1. Save the existing `.o` as `.o.prev`
+2. Compile only the changed source with `-c`
+3. Diff to find changed functions:
+   ```
+   <asm-analyze-cmd> diff-elfs --elf-path .o.prev --comparing-elf-path .o
+   ```
+4. Extract CFGs for the callees the new function will invoke:
+   ```
+   <asm-analyze-cmd> extract-cfg --elf-path .o --functions <callees...>
+   ```
+
+**Full path** — if no `.o` exists yet:
+1. Cross-compile the relevant source file
+2. Extract CFGs for the callees:
+   ```
+   <asm-analyze-cmd> extract-cfg --elf-path <binary> --functions <callees...>
+   ```
+
+**Analyze the CFG output** for call-ordering hazards:
+- **Missing declarations**: are callees present in the binary with the expected
+  signatures? If a callee is absent, flag a missing forward declaration or
+  linkage issue.
+- **Indirect calls**: any `bl` to a register in a callee's CFG — flag as a
+  potential CFI hazard.
+- **Recursion/cycles**: back edges in the CFG with no visible exit condition —
+  flag unbounded recursion.
+- **Call-order assumptions**: if the new function must be called after an
+  `init()`, check whether the callee's CFG shows any guard or assertion
+  enforcing that order. If not, flag it.
+- **Dead paths**: if the expected execution path through a callee is
+  unreachable in the CFG, flag it — the new code may never reach its target.
+- **Latency**: if `mcp__loci__*` is available, check response-time data for
+  callees on the hot path and flag any that would violate a timing budget.
+
+If no binary can be found or built, note "(no binary — static analysis only)"
+and reason about call ordering from source instead.
 
 ### 2. Arithmetic ranges
 *Can any expression produce an out-of-range value at runtime?*
@@ -102,7 +144,7 @@ Severity:
 - **⚠ RISK** — likely bug; adjust the plan to fix it before or during writing
 - **✗ BLOCK** — almost certainly wrong; resolve with the user before writing
 
-All-clear shorthand (use when all three checks pass):
+All-clear shorthand (use when all checks pass):
 ```
 Preflight <FunctionName>: execution fit is good — proceeding with plan.
 ```
@@ -116,19 +158,7 @@ plan, not just add comments:
 - An unsigned subtraction risk → plan to add a guard, write the guard first
 - A resource lifetime gap → plan to use a RAII type; name it in the plan
 - A call-order assumption → plan to add an assert or a static_assert
+- An unbounded loop in a callee → plan to add a termination guard or budget
 
 Write the adjusted plan, then write the code. Do not write the code and then
 note risks afterward — that defeats the purpose.
-
-## Using LOCI data
-
-If `mcp__loci__*` tools are available, call them as part of the planning step,
-not as an afterthought:
-
-1. Query the call graph for the target symbol to get real callee edges.
-2. Check response-time data: if a callee is on a hot path, flag a latency risk
-   in the plan.
-3. Use the symbol table to confirm declaration order rather than grepping.
-
-If LOCI is unavailable, note "(static analysis only)" and rely on the checks
-above.

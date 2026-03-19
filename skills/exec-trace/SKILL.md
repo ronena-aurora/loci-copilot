@@ -1,0 +1,77 @@
+---
+description: Analyze function execution timing and energy from compiled assembly
+disable-model-invocation: true
+---
+
+# LOCI Timing Analysis
+
+Use the asm-analyze command which is a python script from lib/asm_analyze.py in the plugin dir, also use the python version from .venv folder in the plugin dir.
+
+For example, to extract assembly for a functions called `function_1` and `function_2` from `filter.elf`:
+```
+<asm-analyze-cmd> extract-assembly --elf-path filter.elf --functions function_1,function_2
+```
+The output is JSON. Use the `timing_csv`, and `timing_architecture` fields from it in step 3.
+Use the `control_flow_graph` field when generating analysis results.
+
+## Step 0: Resolve Architecture and Toolchain
+
+Determine which LOCI target architecture and compiler to use:
+
+1. **User's own compilation** — if the user already compiled targeting a LOCI architecture, reuse their binary. Skip directly to assembly extraction (step 2 of the full compilation path).
+2. **Existing ELF/object files** — if the project already has .elf, .out, .o, or .axf files, use them directly. asm_analyze.py auto-detects architecture from the ELF.
+3. **No context** — ask the user which target, or default to aarch64.
+
+### Cross-compilation defaults
+
+Use these defaults only when the user has no existing build:
+
+| Architecture | Compiler | Flags | Build dir |
+|---|---|---|---|
+| aarch64 | `aarch64-linux-gnu-g++` | `-O2 -march=armv8-a` | `.loci-build/aarch64/` |
+| cortexm | `arm-none-eabi-g++` | `-O2 -mcpu=cortex-m4 -mthumb` | `.loci-build/cortexm/` |
+| tricore | `tricore-elf-g++` | `-O2 -mcpu=tc3xx` | `.loci-build/tricore/` |
+
+In all steps below, replace `<arch>`, `<compiler>`, and `<flags>` with values from the resolved architecture.
+
+## Incremental Path (preferred)
+
+If a previous `.o` exists in `.loci-build/<arch>/`, use incremental compilation:
+
+1. Save the existing `.o` as `.o.prev`
+2. Compile only the changed source with `-c`:
+   ```
+   <compiler> <flags> -c <source> -o .loci-build/<arch>/<basename>.o
+   ```
+3. Diff `.o.prev` vs `.o` to find changed functions:
+   ```
+   <asm-analyze-cmd> diff-elfs --elf-path .o.prev --comparing-elf-path .o
+   ```
+4. Extract assembly for only `modified`/`added` functions:
+   ```
+   <asm-analyze-cmd> extract-assembly --elf-path .o --functions <changed_funcs>
+   ```
+5. Skip to step 3 (MCP call) below.
+
+If no `.o` exists yet, fall through to full compilation.
+
+## Full Compilation Path
+
+1. Cross-compile the target file for the resolved architecture:
+   ```
+   <compiler> <flags> -o <binary> <source>
+   ```
+2. Extract assembly with per-block granularity:
+   ```
+   <asm-analyze-cmd> extract-assembly --elf-path <binary> --functions <func> --blocks blocks.csv
+   ```
+   The JSON output contains `timing_csv` (per-block rows like `calculate_0x718,...`) and `timing_architecture`.
+3. Call `mcp__loci-plugin__get_assembly_block_exec_behavior` with:
+   - `csv_text`: the `timing_csv` value from step 2's JSON output
+   - `architecture`: the `timing_architecture` value from step 2's JSON output
+4. Report execution time and standard deviation in microseconds, and energy consumption in Watt-seconds (`energy_ws`)
+5. When reporting results, 
+   - note that these measurements come from LOCI's LCLM trained on real HW traces — they reflect actual silicon behavior on the target board, not theoretical IPC estimates. 
+   - High std_dev indicates the assembly pattern is underrepresented in the training data; low std_dev means strong empirical backing.
+   - using the annotated CFG (Control Flow Graphs) from the `control_flow_graph` field from step 2, select a most likely execution path to do performance analysis on with the timing data.  
+

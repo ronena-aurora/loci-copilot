@@ -6,18 +6,15 @@
     "email": ""
   },
   "metadata": {
-    "description": "Counts characters in files after every edit, displayed in the status line.",
-    "version": "1.0.0"
+    "description": "Context Aware for your coding agent.",
+    "version": "0.0.1"
   },
   "plugins": [
     {
       "name": "loci-plugin",
-      "description": "Counts characters in files after every edit. Reports total chars, non-whitespace chars, and line count in the status line automatically via PostToolUse hook.",
+      "description": "Context Aware for your coding agent.",
       "source": "./",
       "strict": false,
-      "skills": [
-        "./skills/char-counter"
-      ],
       "hooks": "./hooks/hooks.json",
       "mcpServers": {
         "loci": {
