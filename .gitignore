@@ -26,3 +26,6 @@ ENV/
 Thumbs.db
 
 .claude
+
+# Eval output
+eval-results/
