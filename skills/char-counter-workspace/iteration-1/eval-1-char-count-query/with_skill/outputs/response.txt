@@ -1,8 +1,0 @@
-I'll start by reading the skill file to understand its instructions, then count the characters in skills/char-counter/SKILL.md.
-
-After reading the SKILL.md file and following its instructions for when a user explicitly asks about character counts, here is the full summary block:
-
-File: skills/char-counter/SKILL.md
-Total characters:          1,493
-Non-whitespace characters: 1,103
-Lines:                        48
