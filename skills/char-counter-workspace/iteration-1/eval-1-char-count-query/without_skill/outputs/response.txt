@@ -1,5 +1,0 @@
-File: skills/char-counter/SKILL.md
-Total characters:          1,476
-Lines:                        47
-
-Note: The total character count (1,476) is the Unicode character count as reported by `wc -m`. The file is 1,483 bytes on disk due to a multi-byte emoji character (📄) in the file content. There are 47 newline-terminated lines in the file.
