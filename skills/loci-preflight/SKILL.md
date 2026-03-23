@@ -57,10 +57,7 @@ writing anything. Follow the control-flow skill's workflow:
 **Incremental path (preferred)** — if a previous `.o` exists:
 1. Save the existing `.o` as `.o.prev`
 2. Compile only the changed source with `-c`
-3. Diff to find changed functions:
-   ```
-   <asm-analyze-cmd> diff-elfs --elf-path .o.prev --comparing-elf-path .o
-   ```
+
 4. Extract CFGs for the callees the new function will invoke:
    ```
    <asm-analyze-cmd> extract-cfg --elf-path .o --functions <callees...>
@@ -72,6 +69,27 @@ writing anything. Follow the control-flow skill's workflow:
    ```
    <asm-analyze-cmd> extract-cfg --elf-path <binary> --functions <callees...>
    ```
+
+**Timing via LOCI MCP** — immediately after CFG extraction, extract assembly
+timing for the same callees to get hardware-accurate latency before writing:
+
+```
+<asm-analyze-cmd> extract-assembly --elf-path <binary> --functions <callees...> --arch <loci_target>
+```
+
+Call `mcp__loci-plugin__get_assembly_block_exec_behavior` with:
+- `csv_text`: the `timing_csv` field from the output above
+- `architecture`: the `timing_architecture` field from the output above
+
+Compute per-callee:
+- **Worst path** = `execution_time_ns` + `std_dev`
+- **Energy** = `energy_ws` (report in µWs)
+
+Sum worst-case timings across the hot-path call chain. If the cumulative chain
+exceeds a known deadline, flag it now — before any code is written.
+
+If the MCP is unavailable, skip this step and note
+"(timing unavailable — MCP not connected)".
 
 **Analyze the CFG output** for call-ordering hazards:
 - **Missing declarations**: are callees present in the binary with the expected
@@ -86,8 +104,9 @@ writing anything. Follow the control-flow skill's workflow:
   enforcing that order. If not, flag it.
 - **Dead paths**: if the expected execution path through a callee is
   unreachable in the CFG, flag it — the new code may never reach its target.
-- **Latency**: if `mcp__loci__*` is available, check response-time data for
-  callees on the hot path and flag any that would violate a timing budget.
+- **Latency**: use the MCP timing results above; flag any callee whose worst
+  path violates a timing budget, or where the cumulative hot-path chain
+  exceeds a known deadline.
 
 If no binary can be found or built, note "(no binary — static analysis only)"
 and reason about call ordering from source instead.
@@ -132,6 +151,7 @@ are not.
 ## Preflight: <FunctionName>
 
 Call graph:  [OK | ⚠ <issue>]
+Latency:     [OK | ⚠ <callee>: worst=XXX ns | (timing unavailable — MCP not connected)]
 Arithmetic:  [OK | ⚠ <issue>]
 Resources:   [OK | ⚠ <issue>]
 
@@ -159,6 +179,8 @@ plan, not just add comments:
 - A resource lifetime gap → plan to use a RAII type; name it in the plan
 - A call-order assumption → plan to add an assert or a static_assert
 - An unbounded loop in a callee → plan to add a termination guard or budget
+- A callee timing violation → plan to cache the result, call asynchronously,
+  or choose a lighter alternative before committing to the design
 
 Write the adjusted plan, then write the code. Do not write the code and then
 note risks afterward — that defeats the purpose.
