@@ -27,6 +27,22 @@ _PLUGIN_DIR = Path(__file__).resolve().parent.parent
 _VENV_DIR = _PLUGIN_DIR / ".venv"
 
 
+def _file_key(f: Path) -> str:
+    """Extract the logical key from a slicer output filename.
+
+    The slicer may produce filenames like 'asm.csv' (simple) or
+    'foo.o~bar.o.diff.csv' (compound). Path.stem only strips the last
+    extension, giving 'foo.o~bar.o.diff' instead of 'diff'. This helper
+    returns the last dot-segment of the stem so the key is always the
+    logical output type (e.g. 'diff', 'asm', 'symmap').
+    """
+    stem = f.stem  # strips .csv
+    last_dot = stem.rfind(".")
+    if last_dot != -1:
+        return stem[last_dot + 1:]
+    return stem
+
+
 def _find_venv_python():
     """Return the path to the venv Python, or None."""
     for p in [
@@ -196,7 +212,7 @@ def run_analysis(elf_path: str, architecture: str | None = None) -> dict:
         files = {}
         for f in Path(tmpdir).iterdir():
             if f.is_file():
-                files[f.stem] = f.read_text()
+                files[_file_key(f)] = f.read_text()
 
         # Detect architecture from elfinfo if not specified
         detected_arch = architecture
@@ -523,7 +539,7 @@ def diff_elfs(elf_path: str, comparing_elf_path: str,
         files = {}
         for f in Path(tmpdir).iterdir():
             if f.is_file():
-                files[f.stem] = f.read_text()
+                files[_file_key(f)] = f.read_text()
 
     # Parse diff CSV if available
     diff_text = files.get("diff", "")
