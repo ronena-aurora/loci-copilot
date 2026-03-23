@@ -1,11 +1,14 @@
 {
   "skill_name": "loci-after-edit",
   "evals": [
-
     {
-      "id": 1,
+      "id": "ae-1",
       "name": "confirmed-improvement-clock",
-      "tags": ["improvement", "timing", "happy-path"],
+      "tags": [
+        "improvement",
+        "timing",
+        "happy-path"
+      ],
       "prompt": "/plan I changed clock_setup to use a /5 prescaler instead of /15. Can you compare the before and after?",
       "setup": {
         "binary": "config/binary.json#binary.path",
@@ -31,11 +34,14 @@
       ],
       "rubric_ref": "after_edit.R1"
     },
-
     {
-      "id": 2,
+      "id": "ae-2",
       "name": "detected-regression-clock",
-      "tags": ["regression", "timing", "negative"],
+      "tags": [
+        "regression",
+        "timing",
+        "negative"
+      ],
       "prompt": "/plan I updated clock_setup with a /3 prescaler for faster ticks. Does the before/after show an improvement?",
       "setup": {
         "binary": "config/binary.json#binary.path",
@@ -61,11 +67,13 @@
       ],
       "rubric_ref": "after_edit.R2"
     },
-
     {
-      "id": 3,
+      "id": "ae-3",
       "name": "no-measurable-change",
-      "tags": ["no-change", "comment-only"],
+      "tags": [
+        "no-change",
+        "comment-only"
+      ],
       "prompt": "/plan I added a comment to clock_setup explaining the prescaler formula. Does the binary show any change?",
       "setup": {
         "binary": "config/binary.json#binary.path",
@@ -90,11 +98,14 @@
       ],
       "rubric_ref": "after_edit.R3"
     },
-
     {
-      "id": 4,
+      "id": "ae-4",
       "name": "inconclusive-high-variance",
-      "tags": ["inconclusive", "noise", "variance"],
+      "tags": [
+        "inconclusive",
+        "noise",
+        "variance"
+      ],
       "prompt": "/plan I tweaked the timeout loop in clock_setup. Does the profiling show any difference?",
       "setup": {
         "binary": "config/binary.json#binary.path",
@@ -119,11 +130,14 @@
       ],
       "rubric_ref": "after_edit.R4"
     },
-
     {
-      "id": 5,
+      "id": "ae-5",
       "name": "exact-before-after-comparison",
-      "tags": ["numerical", "exact-diff", "happy-path"],
+      "tags": [
+        "numerical",
+        "exact-diff",
+        "happy-path"
+      ],
       "prompt": "/plan Compare the exact cycle counts for clock_setup before and after my prescaler change.",
       "setup": {
         "binary": "config/binary.json#binary.path",
@@ -151,11 +165,13 @@
       ],
       "rubric_ref": "after_edit.R5"
     },
-
     {
-      "id": 6,
+      "id": "ae-6",
       "name": "refactor-no-perf-change",
-      "tags": ["refactor", "non-perf"],
+      "tags": [
+        "refactor",
+        "non-perf"
+      ],
       "prompt": "/plan I refactored connection_close to extract a helper. Can you tell if performance changed?",
       "setup": {
         "binary": "config/binary.json#binary.path",
@@ -178,11 +194,13 @@
       ],
       "rubric_ref": "after_edit.R3"
     },
-
     {
-      "id": 7,
+      "id": "ae-7",
       "name": "missing-before-state",
-      "tags": ["negative", "missing-preflight"],
+      "tags": [
+        "negative",
+        "missing-preflight"
+      ],
       "prompt": "/plan I just edited clock_setup. What's the improvement?",
       "setup": {
         "binary": "config/binary.json#binary.path",
@@ -204,11 +222,13 @@
       ],
       "rubric_ref": "after_edit.R6"
     },
-
     {
-      "id": 8,
+      "id": "ae-8",
       "name": "multi-function-edit-mixed",
-      "tags": ["multi-function", "mixed-outcome"],
+      "tags": [
+        "multi-function",
+        "mixed-outcome"
+      ],
       "prompt": "/plan I edited both clock_setup and Connection_assessConnQuality. What changed?",
       "setup": {
         "binary": "config/binary.json#binary.path",
@@ -216,13 +236,23 @@
         "per_function": [
           {
             "function": "clock_setup",
-            "before_measurements": {"tick_period_ns": 15, "function_cycles": 12},
-            "after_measurements":  {"tick_period_ns": 5,  "function_cycles": 10}
+            "before_measurements": {
+              "tick_period_ns": 15,
+              "function_cycles": 12
+            },
+            "after_measurements": {
+              "tick_period_ns": 5,
+              "function_cycles": 10
+            }
           },
           {
             "function": "Connection_assessConnQuality",
-            "before_measurements": {"function_cycles": 22},
-            "after_measurements":  {"function_cycles": 26}
+            "before_measurements": {
+              "function_cycles": 22
+            },
+            "after_measurements": {
+              "function_cycles": 26
+            }
           }
         ]
       },
@@ -236,11 +266,13 @@
       ],
       "rubric_ref": "after_edit.R7"
     },
-
     {
-      "id": 9,
+      "id": "ae-9",
       "name": "regression-detection-conn-quality",
-      "tags": ["regression", "correctness"],
+      "tags": [
+        "regression",
+        "correctness"
+      ],
       "prompt": "/plan I changed Connection_assessConnQuality to use integer division instead of floating-point for speed. Did it regress?",
       "setup": {
         "binary": "config/binary.json#binary.path",
@@ -266,11 +298,14 @@
       ],
       "rubric_ref": "after_edit.R2"
     },
-
     {
-      "id": 10,
+      "id": "ae-10",
       "name": "improvement-with-exact-percentage",
-      "tags": ["numerical", "percentage", "happy-path"],
+      "tags": [
+        "numerical",
+        "percentage",
+        "happy-path"
+      ],
       "prompt": "/plan What percent improvement did my clock_setup change achieve? I need the exact number for the PR description.",
       "setup": {
         "binary": "config/binary.json#binary.path",
@@ -295,11 +330,13 @@
       ],
       "rubric_ref": "after_edit.R5"
     },
-
     {
-      "id": 11,
+      "id": "ae-11",
       "name": "worsened-performance-explicit",
-      "tags": ["regression", "explicit-question"],
+      "tags": [
+        "regression",
+        "explicit-question"
+      ],
       "prompt": "/plan My change to clock_setup made it slower. How much worse is it?",
       "setup": {
         "binary": "config/binary.json#binary.path",
@@ -322,11 +359,13 @@
       ],
       "rubric_ref": "after_edit.R2"
     },
-
     {
-      "id": 12,
+      "id": "ae-12",
       "name": "mixed-metric-outcome",
-      "tags": ["mixed-outcome", "tradeoff"],
+      "tags": [
+        "mixed-outcome",
+        "tradeoff"
+      ],
       "prompt": "/plan I optimised clock_setup for tick period but I'm worried the function itself got heavier. Can you check both?",
       "setup": {
         "binary": "config/binary.json#binary.path",
@@ -354,6 +393,5 @@
       ],
       "rubric_ref": "after_edit.R7"
     }
-
   ]
 }

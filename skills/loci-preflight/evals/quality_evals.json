@@ -2,11 +2,9 @@
   "skill_name": "loci-preflight",
   "description": "Tests that the content of each preflight section is correct and specific per SKILL.md — not just present. Call graph must reference actual CFG findings. Arithmetic must name the specific hazard type and expression. Resources must map ownership across every exit path. Execution fit must follow from the findings. Uses functions compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out.",
   "note": "Set $LOCI_TEST_BLE_ROOT to your local BLE project root before running.",
-
   "evals": [
-
     {
-      "id": 1,
+      "id": "pf-quality-1",
       "should_trigger": true,
       "category": "call-graph-quality-indirect-call",
       "prompt": "Add a logging hook to osal_set_event in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/osal/src/common/osal.c that calls a user-supplied function pointer logFn(taskID, event) right before the event is posted. logFn is stored in a global and set by the application at startup.",
@@ -23,9 +21,8 @@
         }
       ]
     },
-
     {
-      "id": 2,
+      "id": "pf-quality-2",
       "should_trigger": true,
       "category": "call-graph-quality-call-order",
       "prompt": "Add a call to GAPBondMgr_FindAddr as the first thing inside GAPBondMgr_ProcessEvent in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c to verify that the event's source address is bonded before processing the event. This will be added before any other logic in the function.",
@@ -42,9 +39,8 @@
         }
       ]
     },
-
     {
-      "id": 3,
+      "id": "pf-quality-3",
       "should_trigger": true,
       "category": "call-graph-quality-latency",
       "prompt": "Add a call to GAPBondMgr_FindAddr at the top of HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c to reject packets from unbonded peers. The HCI data path must complete within 10μs at 48 MHz (480 cycles). Both functions are in $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out.",
@@ -65,9 +61,8 @@
         }
       ]
     },
-
     {
-      "id": 4,
+      "id": "pf-quality-4",
       "should_trigger": true,
       "category": "arithmetic-quality-specific-type",
       "prompt": "/plan Fix the allocation inside GAPBondMgr_Init in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c to pre-allocate a shadow table sized numBonds * sizeof(gattCharCfg_t) * 3. numBonds is a uint8_t parameter that can range from 1 to 255.",
@@ -84,9 +79,8 @@
         }
       ]
     },
-
     {
-      "id": 5,
+      "id": "pf-quality-5",
       "should_trigger": true,
       "category": "arithmetic-quality-unsigned-wraparound",
       "prompt": "/plan Fix osal_mem_free in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/osal/src/common/osal_memory.c — the block free size is computed as hdr->size - OSAL_MEM_HDRSZ using unsigned types. If a corrupted header makes hdr->size smaller than OSAL_MEM_HDRSZ, the subtraction wraps to a huge positive value and corrupts the free list.",
@@ -103,9 +97,8 @@
         }
       ]
     },
-
     {
-      "id": 6,
+      "id": "pf-quality-6",
       "should_trigger": true,
       "category": "resources-quality-path-mapping",
       "prompt": "Refactor GAPBondMgr_Init in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c to allocate two buffers — a bond table and a CCCD shadow table — via osal_mem_alloc. Add early-return error handling if either allocation fails.",
@@ -122,9 +115,8 @@
         }
       ]
     },
-
     {
-      "id": 7,
+      "id": "pf-quality-7",
       "should_trigger": true,
       "category": "resources-quality-use-after-free",
       "prompt": "Add cleanup logic to GAPBondMgr_Init in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c — when re-initializing, free the old bond table with osal_mem_free(pBondTable), then immediately read pBondTable->numBonds to log how many entries were present before freeing.",
@@ -141,9 +133,8 @@
         }
       ]
     },
-
     {
-      "id": 8,
+      "id": "pf-quality-8",
       "should_trigger": true,
       "category": "execution-fit-quality-derives-from-findings",
       "prompt": "Add a simple boolean guard inside HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c that returns HCI_ERROR_CODE_CONTROLLER_BUSY if a global flag hciSuspended is set — no new callees, no arithmetic, no resource allocation.",
@@ -164,6 +155,5 @@
         }
       ]
     }
-
   ]
 }

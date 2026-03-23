@@ -2,11 +2,9 @@
   "skill_name": "loci-preflight",
   "description": "Tests skill invocation on real BLE project prompts. Positive cases: plan/implement/modify/add keywords, or any plan involving new logic. Negative cases: read-only, explain, search, build ops.",
   "note": "Prompts use $LOCI_TEST_BLE_ROOT — set this env var to your local BLE project root before running.",
-
   "evals": [
-
     {
-      "id": 1,
+      "id": "pf-simple-1",
       "should_trigger": true,
       "category": "timing-budget",
       "prompt": "I want to add a call to GAPBondMgr_FindAddr at the top of HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c to verify the peer is bonded before sending data. The HCI data path must complete within 10μs at 48 MHz (480 cycles total). Both functions are compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out. Will adding the bond check keep us within budget?",
@@ -27,9 +25,8 @@
         }
       ]
     },
-
     {
-      "id": 2,
+      "id": "pf-simple-2",
       "should_trigger": false,
       "category": "read-understand",
       "prompt": "Explain what GAPBondMgr_FindAddr does in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c and describe what each parameter means.",
@@ -42,9 +39,8 @@
         }
       ]
     },
-
     {
-      "id": 3,
+      "id": "pf-simple-3",
       "should_trigger": true,
       "category": "implement-keyword",
       "prompt": "Implement a retry loop inside HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c that retries up to 3 times if the connection handle is invalid before returning an error.",
@@ -61,9 +57,8 @@
         }
       ]
     },
-
     {
-      "id": 4,
+      "id": "pf-simple-4",
       "should_trigger": true,
       "category": "modify-keyword",
       "prompt": "How should I modify Connection_getConnIndex in $LOCI_TEST_BLE_ROOT/examples/rtos/LP_EM_CC2340R53/ble5stack/basic_ble_profiles/app/app_connection.c to return -1 instead of 0 when no connection is found, so callers can distinguish between index 0 and not-found?",
@@ -76,9 +71,8 @@
         }
       ]
     },
-
     {
-      "id": 5,
+      "id": "pf-simple-5",
       "should_trigger": true,
       "category": "add-method",
       "prompt": "Add a method to GAPBondMgr_FindAddr in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c that also returns the bond index as an output parameter alongside the existing return value.",
@@ -91,9 +85,8 @@
         }
       ]
     },
-
     {
-      "id": 6,
+      "id": "pf-simple-6",
       "should_trigger": true,
       "category": "plan-new-logic",
       "prompt": "/plan Add exponential backoff to the connection parameter update retry logic in $LOCI_TEST_BLE_ROOT/examples/rtos/LP_EM_CC2340R53/ble5stack/basic_ble_profiles/app/app_connection.c. Each retry should double the wait interval up to a cap of 10 seconds.",
@@ -110,9 +103,8 @@
         }
       ]
     },
-
     {
-      "id": 7,
+      "id": "pf-simple-7",
       "should_trigger": true,
       "category": "thinking-mode",
       "prompt": "Think through how to add a watchdog reset inside OAD_processQueue in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/profiles/oad/cc26xx/oad.c if the queue has been stalled for more than 30 seconds.",
@@ -125,9 +117,8 @@
         }
       ]
     },
-
     {
-      "id": 8,
+      "id": "pf-simple-8",
       "should_trigger": false,
       "category": "read-explain",
       "prompt": "What parameters does GAP_DeviceInit in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gap.c take and what does each one do? I'm trying to understand the initialization flow.",
@@ -140,9 +131,8 @@
         }
       ]
     },
-
     {
-      "id": 9,
+      "id": "pf-simple-9",
       "should_trigger": false,
       "category": "read-only",
       "prompt": "Show me the body of OAD_processQueue in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/profiles/oad/cc26xx/oad.c — I want to understand it before we make changes.",
@@ -155,9 +145,8 @@
         }
       ]
     },
-
     {
-      "id": 10,
+      "id": "pf-simple-10",
       "should_trigger": false,
       "category": "analysis-no-change",
       "prompt": "Review OAD_open in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/profiles/oad/cc26xx/oad.c for potential issues. Don't change anything yet — just tell me what you find.",
@@ -170,9 +159,8 @@
         }
       ]
     },
-
     {
-      "id": 11,
+      "id": "pf-simple-11",
       "should_trigger": true,
       "category": "plan-write-function",
       "prompt": "/plan Write a function that validates a BLE connection handle before passing it to HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c — return an error code if the handle is out of range.",
@@ -189,9 +177,8 @@
         }
       ]
     },
-
     {
-      "id": 12,
+      "id": "pf-simple-12",
       "should_trigger": true,
       "category": "plan-fix-bug",
       "prompt": "/plan Fix the unsigned subtraction wrap in osal_mem_free in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/osal/src/common/osal_memory.c when block size underflows — if the block header size exceeds the reported size the computed free size wraps to a huge number.",
@@ -208,9 +195,8 @@
         }
       ]
     },
-
     {
-      "id": 13,
+      "id": "pf-simple-13",
       "should_trigger": true,
       "category": "freed-resource-error-path",
       "prompt": "Refactor OAD_open in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/profiles/oad/cc26xx/oad.c to free oadCCCDTable and call mq_close on hOadQ before returning early if GATTServApp_RegisterService fails — right now both resources leak on that error path.",
@@ -227,9 +213,8 @@
         }
       ]
     },
-
     {
-      "id": 14,
+      "id": "pf-simple-14",
       "should_trigger": true,
       "category": "call-order-hazard",
       "prompt": "Add a call to GAPBondMgr_FindAddr as the first check inside OAD_open in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/profiles/oad/cc26xx/oad.c — so OAD rejects image transfers from unbonded devices before doing any setup.",
@@ -246,6 +231,5 @@
         }
       ]
     }
-
   ]
 }

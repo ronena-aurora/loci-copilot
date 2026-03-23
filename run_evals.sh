@@ -4,8 +4,10 @@
 # Usage:
 #   ./run_evals.sh --ble-root "C:\Playground\BLE"              # all evals
 #   ./run_evals.sh --ble-root "C:\Playground\BLE" --skill char-counter  # one skill
-#   ./run_evals.sh --ble-root "C:\Playground\BLE" --eval-id 3           # one eval
+#   ./run_evals.sh --ble-root "C:\Playground\BLE" --eval-id pf-simple-3 # one eval
+#   ./run_evals.sh --ble-root "C:\Playground\BLE" --eval-id "pf-critical-*" # glob pattern
 #   ./run_evals.sh --ble-root "C:\Playground\BLE" -j 4                  # 4 parallel jobs
+#   ./run_evals.sh --ble-root "C:\Playground\BLE" --list                 # list all eval IDs
 #   LOCI_TEST_BLE_ROOT="C:\Playground\BLE" ./run_evals.sh               # env var
 #
 # Each eval is run via `claude -p` with the skill's SKILL.md injected as a
@@ -24,6 +26,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BLE_ROOT="${LOCI_TEST_BLE_ROOT:-}"
 FILTER_SKILL=""
 FILTER_EVAL_ID=""
+LIST_MODE=false
 MAX_JOBS=4
 EVAL_TIMEOUT=120   # seconds per claude -p call
 GRADE_TIMEOUT=60   # seconds per grader call
@@ -48,8 +51,9 @@ while [[ $# -gt 0 ]]; do
     --timeout)    EVAL_TIMEOUT="$2"; shift 2 ;;
     --timeout=*)  EVAL_TIMEOUT="${1#*=}"; shift ;;
     --sequential) MAX_JOBS=1; shift ;;
+    --list)       LIST_MODE=true; shift ;;
     -h|--help)
-      head -13 "$0" | tail -12
+      head -15 "$0" | tail -14
       exit 0
       ;;
     *) echo "Unknown flag: $1"; exit 1 ;;
@@ -411,7 +415,8 @@ $(cat "$SKILL_MD")
   for (( i=0; i<EVAL_COUNT; i++ )); do
     EVAL_ID=$(jq -r ".evals[$i].id" "$EVAL_FILE")
 
-    if [[ -n "$FILTER_EVAL_ID" && "$EVAL_ID" != "$FILTER_EVAL_ID" ]]; then
+    # shellcheck disable=SC2053
+    if [[ -n "$FILTER_EVAL_ID" && "$EVAL_ID" != $FILTER_EVAL_ID ]]; then
       continue
     fi
 
@@ -432,6 +437,20 @@ done
 TOTAL=${#JOB_SKILLS[@]}
 if [[ $TOTAL -eq 0 ]]; then
   echo "No evals matched the filters."
+  exit 0
+fi
+
+if $LIST_MODE; then
+  echo "Available eval IDs ($TOTAL total):"
+  echo ""
+  CURRENT=""
+  for (( j=0; j<TOTAL; j++ )); do
+    if [[ "${JOB_SKILLS[$j]}" != "$CURRENT" ]]; then
+      CURRENT="${JOB_SKILLS[$j]}"
+      echo -e "${CYAN}  $CURRENT${NC}"
+    fi
+    echo "    ${JOB_IDS[$j]}"
+  done
   exit 0
 fi
 

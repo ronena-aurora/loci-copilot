@@ -2,11 +2,9 @@
   "skill_name": "loci-preflight",
   "description": "Tests whether the skill surfaces the most critical real-world bugs in BLE + RTOS + Cortex-M4 development that SKILL.md does not explicitly list but the skill should reason about during preflight: ISR/task context safety, unchecked NULL returns from allocators, stack depth on a constrained embedded stack, and unaligned pointer casts that cause ARM hardfaults. All functions are compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out.",
   "note": "Set $LOCI_TEST_BLE_ROOT to your local BLE project root before running.",
-
   "evals": [
-
     {
-      "id": 1,
+      "id": "pf-rtos-1",
       "should_trigger": true,
       "category": "isr-context-safety",
       "prompt": "Add a call to osal_msg_send inside osal_set_event in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/osal/src/common/osal.c to notify a monitoring task every time an event is posted. osal_set_event is called from both task context and ISR context on the BLE stack. osal_msg_send acquires an internal mutex to enqueue the message.",
@@ -27,9 +25,8 @@
         }
       ]
     },
-
     {
-      "id": 2,
+      "id": "pf-rtos-2",
       "should_trigger": true,
       "category": "null-return-unchecked",
       "prompt": "Add a per-message scratch buffer inside osal_msg_receive in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/osal/src/common/osal.c — allocate it with osal_mem_alloc(MSG_SCRATCH_SIZE) at the top of the function, use it to copy the message header, then free it before returning. Do not add a NULL check on the allocation result.",
@@ -46,9 +43,8 @@
         }
       ]
     },
-
     {
-      "id": 3,
+      "id": "pf-rtos-3",
       "should_trigger": true,
       "category": "stack-depth",
       "prompt": "Add a local message staging buffer inside GAPBondMgr_ProcessEvent in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c — declare uint8_t stagingBuf[512] on the stack to hold a copy of the incoming bond event before processing it. GAPBondMgr_ProcessEvent is called from the BLE stack task which has a 768-byte stack.",
@@ -65,9 +61,8 @@
         }
       ]
     },
-
     {
-      "id": 4,
+      "id": "pf-rtos-4",
       "should_trigger": true,
       "category": "alignment-pointer-cast",
       "prompt": "Add a fast header parser inside HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c — cast the incoming pData uint8_t pointer directly to a hciDataPacket_t* struct pointer to read the opcode and length fields in one operation: hciDataPacket_t *hdr = (hciDataPacket_t*)pData. pData points into a received BLE packet buffer that is byte-aligned but not guaranteed to be 4-byte aligned.",
@@ -84,6 +79,5 @@
         }
       ]
     }
-
   ]
 }

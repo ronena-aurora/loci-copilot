@@ -2,11 +2,9 @@
   "skill_name": "loci-preflight",
   "description": "Tests that the plugin is correctly invoked (or correctly silent) and that every output always contains all four sections SKILL.md requires: Call graph, Arithmetic, Resources, Execution fit. Uses functions compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out.",
   "note": "Set $LOCI_TEST_BLE_ROOT to your local BLE project root before running.",
-
   "evals": [
-
     {
-      "id": 1,
+      "id": "pf-critical-1",
       "should_trigger": true,
       "category": "invoke-implement-all-fields",
       "prompt": "Implement a retry loop inside HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c that retries up to 3 times if the connection handle is invalid before returning an error.",
@@ -39,9 +37,8 @@
         }
       ]
     },
-
     {
-      "id": 2,
+      "id": "pf-critical-2",
       "should_trigger": true,
       "category": "invoke-add-method-all-fields",
       "prompt": "Add a method to GAPBondMgr_FindAddr in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c that also returns the bond index as an output parameter alongside the existing return value.",
@@ -70,9 +67,8 @@
         }
       ]
     },
-
     {
-      "id": 3,
+      "id": "pf-critical-3",
       "should_trigger": true,
       "category": "invoke-modify-all-fields",
       "prompt": "How should I modify osal_set_event in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/osal/src/common/osal.c to also log the event to a ring buffer before posting, so we can replay events in the debugger?",
@@ -101,9 +97,8 @@
         }
       ]
     },
-
     {
-      "id": 4,
+      "id": "pf-critical-4",
       "should_trigger": true,
       "category": "invoke-plan-all-fields",
       "prompt": "/plan Add a per-connection packet counter inside HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c that increments a uint32_t in the connection record on every successful send.",
@@ -132,9 +127,8 @@
         }
       ]
     },
-
     {
-      "id": 5,
+      "id": "pf-critical-5",
       "should_trigger": true,
       "category": "invoke-thinking-mode-all-fields",
       "prompt": "Think through how to add a watchdog reset inside GAPBondMgr_ProcessEvent in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c if the bond manager has been stuck processing the same event for more than 5 seconds.",
@@ -163,9 +157,8 @@
         }
       ]
     },
-
     {
-      "id": 6,
+      "id": "pf-critical-6",
       "should_trigger": false,
       "category": "no-invoke-explain",
       "prompt": "Explain what GAPBondMgr_Init does in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c and what each parameter controls.",
@@ -178,9 +171,8 @@
         }
       ]
     },
-
     {
-      "id": 7,
+      "id": "pf-critical-7",
       "should_trigger": false,
       "category": "no-invoke-read-only",
       "prompt": "Show me the body of osal_set_event in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/osal/src/common/osal.c — I want to understand how it dispatches events before I make any changes.",
@@ -193,9 +185,8 @@
         }
       ]
     },
-
     {
-      "id": 8,
+      "id": "pf-critical-8",
       "should_trigger": false,
       "category": "no-invoke-analysis-no-change",
       "prompt": "Review HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c for potential issues. Don't change anything yet — just tell me what you find.",
@@ -208,6 +199,5 @@
         }
       ]
     }
-
   ]
 }

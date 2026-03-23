@@ -45,3 +45,4 @@ If they ask about multiple files, report each on its own line with a total row.
   give the byte size instead.
 - Empty files: report 0 for all counts.
 - Very large files (>1 MB): note the size and still report the counts.
+
