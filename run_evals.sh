@@ -8,6 +8,7 @@
 #   ./run_evals.sh --ble-root "C:\Playground\BLE" --eval-id "pf-critical-*" # glob pattern
 #   ./run_evals.sh --ble-root "C:\Playground\BLE" -j 4                  # 4 parallel jobs
 #   ./run_evals.sh --ble-root "C:\Playground\BLE" --list                 # list all eval IDs
+#   ./run_evals.sh --ble-root "C:\Playground\BLE" --verbose              # real-time output
 #   LOCI_TEST_BLE_ROOT="C:\Playground\BLE" ./run_evals.sh               # env var
 #
 # Each eval is run via `claude -p` with the skill's SKILL.md injected as a
@@ -27,9 +28,10 @@ BLE_ROOT="${LOCI_TEST_BLE_ROOT:-}"
 FILTER_SKILL=""
 FILTER_EVAL_ID=""
 LIST_MODE=false
+VERBOSE=false
 MAX_JOBS=4
-EVAL_TIMEOUT=240   # seconds per claude -p call
-GRADE_TIMEOUT=60   # seconds per grader call
+EVAL_TIMEOUT=600   # seconds per claude -p call
+GRADE_TIMEOUT=120  # seconds per grader call
 
 # Well-known BLE artifacts (relative to BLE_ROOT)
 BLE_BASIC_BLE="examples/rtos/LP_EM_CC2340R5/ble5stack/basic_ble/freertos/ticlang/basic_ble.out"
@@ -52,6 +54,7 @@ while [[ $# -gt 0 ]]; do
     --timeout=*)  EVAL_TIMEOUT="${1#*=}"; shift ;;
     --sequential) MAX_JOBS=1; shift ;;
     --list)       LIST_MODE=true; shift ;;
+    --verbose|-v) VERBOSE=true; shift ;;
     -h|--help)
       head -15 "$0" | tail -14
       exit 0
@@ -95,12 +98,7 @@ if [[ ! -f "$BLE_ELF" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# MCP config — written only when LOCI_MCP_TOKEN is set.
-# Without a valid token the MCP server returns invalid_token and claude -p
-# hangs on every tool call.  Skills that call MCP tools must handle the
-# "no MCP" case gracefully (e.g. loci-preflight writes
-# "(timing unavailable — MCP not connected)").  Evals that only check for
-# section headers still pass in that mode.
+# MCP config — written to a temp file so claude -p can connect
 # ---------------------------------------------------------------------------
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 RESULTS_DIR="$SCRIPT_DIR/eval-results/$TIMESTAMP"
@@ -142,6 +140,7 @@ EOF
 echo -e "${BOLD}Skill Eval Runner${NC}  ($TIMESTAMP)"
 echo "Results → $RESULTS_DIR/"
 echo "Parallelism: $MAX_JOBS jobs"
+$VERBOSE && echo "Verbose: ON (real-time output to terminal)"
 echo ""
 
 # ---------------------------------------------------------------------------
@@ -239,7 +238,7 @@ print_error_detail() {
 }
 
 # ---------------------------------------------------------------------------
-# grade_bash — deterministic Bash-based grader
+# grade_bash — deterministic Bash-based grader for should_trigger tests
 #   $1: response text
 #   $2: should_trigger ("true" | "false")
 #   Writes "PASS|reason" or "FAIL|reason" to stdout
@@ -305,74 +304,172 @@ run_one_eval() {
 
   local TAG="${EVAL_FILE_NAME} > ${EVAL_ID}"
   local PROG_PFX="[${JOB_NUM}/${TOTAL}]"
-  local EVAL_FILE_STEM="${EVAL_FILE_NAME%.json}"
-  local RESPONSE_FILE="$RESULTS_DIR/${SKILL_NAME}_${EVAL_FILE_STEM}_eval${EVAL_ID}_response.txt"
-  local STDERR_FILE="$RESULTS_DIR/${SKILL_NAME}_${EVAL_FILE_STEM}_eval${EVAL_ID}_stderr.txt"
-  local GRADE_FILE="$RESULTS_DIR/${SKILL_NAME}_${EVAL_FILE_STEM}_eval${EVAL_ID}_grade.txt"
-  local VERDICT_FILE="$RESULTS_DIR/${SKILL_NAME}_${EVAL_FILE_STEM}_eval${EVAL_ID}_verdict.txt"
-  local LOG_FILE="$RESULTS_DIR/${SKILL_NAME}_${EVAL_FILE_STEM}_eval${EVAL_ID}_log.txt"
+  local RESPONSE_FILE="$RESULTS_DIR/${SKILL_NAME}_eval${EVAL_ID}_response.txt"
+  local STDERR_FILE="$RESULTS_DIR/${SKILL_NAME}_eval${EVAL_ID}_stderr.txt"
+  local GRADE_FILE="$RESULTS_DIR/${SKILL_NAME}_eval${EVAL_ID}_grade.txt"
+  local VERDICT_FILE="$RESULTS_DIR/${SKILL_NAME}_eval${EVAL_ID}_verdict.txt"
+  local LOG_FILE="$RESULTS_DIR/${SKILL_NAME}_eval${EVAL_ID}_log.txt"
+  local MASTER_LOG="$RESULTS_DIR/master.log"
 
   # Strip leading slash commands (/plan, /review, etc.) — they are
   # interactive-session affordances that don't work in claude -p.
   PROMPT=$(echo "$PROMPT" | sed 's|^/[a-zA-Z_-]* ||')
 
-  {
-    echo "${PROG_PFX} START    ${TAG}" >> "$PROGRESS_LOG"
-    echo "  [$TAG] ${PROMPT:0:80}..."
-
-    # ── Step 1: Run the eval prompt ────────────────────────────
-    local CLAUDE_ARGS=(-p --dangerously-skip-permissions)
-    if [[ -n "$MCP_CONFIG" ]]; then
-      CLAUDE_ARGS+=(--mcp-config "$MCP_CONFIG")
+  # log_eval: writes to both the per-eval log and master log.
+  # In verbose mode, also writes to stderr (which reaches the terminal).
+  log_eval() {
+    local ts
+    ts="$(date +%H:%M:%S)"
+    local line="[$ts] $PROG_PFX $*"
+    echo "$line" >> "$LOG_FILE"
+    echo "$line" >> "$MASTER_LOG"
+    if $VERBOSE; then
+      echo -e "$line" >&2
     fi
-    if [[ -n "$SYSTEM_PROMPT" ]]; then
-      CLAUDE_ARGS+=(--append-system-prompt "$SYSTEM_PROMPT")
-    fi
+  }
 
-    local RESPONSE CLAUDE_EXIT=0
-    echo "${PROG_PFX} RUNNING  ${TAG}" >> "$PROGRESS_LOG"
-    RESPONSE=$(echo "$PROMPT" | timeout "$EVAL_TIMEOUT" claude "${CLAUDE_ARGS[@]}" 2>"$STDERR_FILE") || CLAUDE_EXIT=$?
+  # Reset log file
+  : > "$LOG_FILE"
 
-    if [[ $CLAUDE_EXIT -ne 0 ]]; then
-      if [[ $CLAUDE_EXIT -eq 124 ]]; then
-        echo "    ERROR: eval timed out after ${EVAL_TIMEOUT}s"
-        print_error_detail "timeout" "124" "$STDERR_FILE" "$TAG" "$MCP_CONFIG" "$RESPONSE_FILE"
-        echo "TIMEOUT|eval exceeded ${EVAL_TIMEOUT}s" > "$VERDICT_FILE"
-        echo "${PROG_PFX} DONE     ${TAG}  ERROR (timeout)" >> "$PROGRESS_LOG"
-      else
-        echo "    ERROR: claude exited with code $CLAUDE_EXIT"
-        print_error_detail "claude-exec" "$CLAUDE_EXIT" "$STDERR_FILE" "$TAG" "$MCP_CONFIG" "$RESPONSE_FILE"
-        echo "ERROR|claude exited with code $CLAUDE_EXIT" > "$VERDICT_FILE"
-        echo "${PROG_PFX} DONE     ${TAG}  ERROR (exit ${CLAUDE_EXIT})" >> "$PROGRESS_LOG"
-      fi
-      [[ ! -s "$STDERR_FILE" ]] && rm -f "$STDERR_FILE"
-      return
-    fi
-    [[ ! -s "$STDERR_FILE" ]] && rm -f "$STDERR_FILE"
+  log_eval "START  $TAG"
+  log_eval "Prompt: ${PROMPT:0:120}..."
+  echo "${PROG_PFX} START    ${TAG}" >> "$PROGRESS_LOG"
 
+  # ── Step 1: Run the eval prompt ────────────────────────────
+  # --bare skips hooks/plugins so eval measures the skill, not setup overhead.
+  local CLAUDE_ARGS=(-p --bare --dangerously-skip-permissions)
+  if [[ -n "$MCP_CONFIG" ]]; then
+    CLAUDE_ARGS+=(--mcp-config "$MCP_CONFIG")
+  fi
+  if [[ -n "$SYSTEM_PROMPT" ]]; then
+    CLAUDE_ARGS+=(--append-system-prompt "$SYSTEM_PROMPT")
+  fi
+
+  # In verbose mode: --output-format json gives structured result with tool
+  # usage summary; --verbose sends internal debug logging to stderr.
+  local JSON_FILE=""
+  if $VERBOSE; then
+    JSON_FILE="$RESULTS_DIR/${SKILL_NAME}_eval${EVAL_ID}_full.json"
+    CLAUDE_ARGS+=(--output-format json --verbose)
+  fi
+
+  log_eval "Executing: timeout ${EVAL_TIMEOUT}s claude ${CLAUDE_ARGS[*]:0:6} ..."
+  echo "${PROG_PFX} RUNNING  ${TAG}" >> "$PROGRESS_LOG"
+
+  # Write stdout directly to file so partial output survives timeout.
+  local CLAUDE_EXIT=0
+  local T_START T_END T_ELAPSED
+  T_START=$(date +%s)
+  echo "$PROMPT" | timeout --kill-after=10 "$EVAL_TIMEOUT" claude "${CLAUDE_ARGS[@]}" \
+    >"$RESPONSE_FILE" 2>"$STDERR_FILE" || CLAUDE_EXIT=$?
+  T_END=$(date +%s)
+  T_ELAPSED=$((T_END - T_START))
+
+  log_eval "claude exited with code $CLAUDE_EXIT after ${T_ELAPSED}s"
+
+  # In verbose mode: extract plain text from JSON output and log tool usage.
+  local RESPONSE=""
+  if [[ -n "$JSON_FILE" ]] && [[ -s "$RESPONSE_FILE" ]]; then
+    cp "$RESPONSE_FILE" "$JSON_FILE"
+
+    # JSON output is an array of events: system, user, assistant, result.
+    # Extract the final result text.
+    RESPONSE=$(jq -r '[.[] | select(.type == "result") | .result // empty] | last // empty' "$JSON_FILE" 2>/dev/null || true)
     if [[ -z "$RESPONSE" ]]; then
-      echo "    ERROR: claude exited 0 but returned empty response"
-      print_error_detail "empty-response" "0" "" "$TAG" "$MCP_CONFIG" "$RESPONSE_FILE"
-      echo "ERROR|empty response despite exit code 0" > "$VERDICT_FILE"
-      echo "${PROG_PFX} DONE     ${TAG}  ERROR (empty response)" >> "$PROGRESS_LOG"
-      return
+      # Fallback: join all assistant text content
+      RESPONSE=$(jq -r '[.[] | select(.type == "assistant") | .message.content[]? | select(.type == "text") | .text] | join("\n")' "$JSON_FILE" 2>/dev/null || true)
     fi
 
-    echo "$RESPONSE" > "$RESPONSE_FILE"
-    local BYTES
-    BYTES=$(echo "$RESPONSE" | wc -c | tr -d ' ')
-    echo "    Response: ${BYTES} bytes"
+    # Log tool usage from assistant messages
+    local tool_summary
+    tool_summary=$(jq -r '
+      [.[] | select(.type == "assistant") | .message.content[]? | select(.type == "tool_use") | .name] |
+      if length > 0 then "Tools (" + (length | tostring) + "): " + (. | join(", ")) else empty end
+    ' "$JSON_FILE" 2>/dev/null || true)
+    if [[ -n "$tool_summary" ]]; then
+      log_eval "$tool_summary"
+    fi
 
-    # ── Step 2: Grade the response ─────────────────────────────
-    local VERDICT REASON
-    if [[ "$GRADING_MODE" == "bash" ]]; then
-      local BASH_VERDICT
-      BASH_VERDICT=$(grade_bash "$RESPONSE" "$SHOULD_TRIGGER")
-      echo "$BASH_VERDICT" > "$GRADE_FILE"
-      VERDICT="${BASH_VERDICT%%|*}"
-      REASON="${BASH_VERDICT#*|}"
+    # Log cost/usage from result event
+    local usage_info
+    usage_info=$(jq -r '
+      .[] | select(.type == "result") |
+      "Turns: \(.num_turns // "?"), Cost: $\(.total_cost_usd // "?"), Duration: \((.duration_ms // 0) / 1000 | floor)s, Stop: \(.stop_reason // "?")"
+    ' "$JSON_FILE" 2>/dev/null || true)
+    if [[ -n "$usage_info" ]]; then
+      log_eval "$usage_info"
+    fi
+
+    # Write plain text for grading
+    if [[ -n "$RESPONSE" ]]; then
+      echo "$RESPONSE" > "$RESPONSE_FILE"
+    fi
+  else
+    RESPONSE=$(cat "$RESPONSE_FILE" 2>/dev/null || true)
+  fi
+
+  # Always log stderr (contains --verbose debug output in verbose mode)
+  if [[ -s "$STDERR_FILE" ]]; then
+    local stderr_bytes stderr_lines
+    stderr_bytes=$(wc -c < "$STDERR_FILE" | tr -d ' ')
+    stderr_lines=$(wc -l < "$STDERR_FILE" | tr -d ' ')
+    log_eval "Stderr: ${stderr_bytes} bytes, ${stderr_lines} lines → $STDERR_FILE"
+    if $VERBOSE; then
+      log_eval "--- stderr (last 30 lines) ---"
+      while IFS= read -r stderr_line; do
+        log_eval "  $stderr_line"
+      done < <(tail -30 "$STDERR_FILE")
+      log_eval "--- end stderr ---"
+    fi
+  else
+    log_eval "Stderr: (empty — claude produced no diagnostic output)"
+  fi
+
+  if [[ $CLAUDE_EXIT -ne 0 ]]; then
+    # Check for partial output even on timeout
+    local partial_bytes=0
+    if [[ -s "$RESPONSE_FILE" ]]; then
+      partial_bytes=$(wc -c < "$RESPONSE_FILE" | tr -d ' ')
+      log_eval "Partial output: ${partial_bytes} bytes → $RESPONSE_FILE"
+    fi
+
+    if [[ $CLAUDE_EXIT -eq 124 || $CLAUDE_EXIT -eq 137 ]]; then
+      log_eval "ERROR: timed out after ${EVAL_TIMEOUT}s (exit $CLAUDE_EXIT, partial: ${partial_bytes} bytes)"
+      print_error_detail "timeout" "$CLAUDE_EXIT" "$STDERR_FILE" "$TAG" "$MCP_CONFIG" "$RESPONSE_FILE" >> "$LOG_FILE" 2>&1
+      echo "TIMEOUT|eval exceeded ${EVAL_TIMEOUT}s (killed after ${T_ELAPSED}s, partial: ${partial_bytes}B)" > "$VERDICT_FILE"
+      echo "${PROG_PFX} DONE     ${TAG}  ERROR (timeout ${T_ELAPSED}s)" >> "$PROGRESS_LOG"
     else
-      local GRADE_PROMPT="You are an eval grader. Determine if the response PASSES or FAILS.
+      log_eval "ERROR: claude exited with code $CLAUDE_EXIT"
+      print_error_detail "claude-exec" "$CLAUDE_EXIT" "$STDERR_FILE" "$TAG" "$MCP_CONFIG" "$RESPONSE_FILE" >> "$LOG_FILE" 2>&1
+      echo "ERROR|claude exited with code $CLAUDE_EXIT" > "$VERDICT_FILE"
+      echo "${PROG_PFX} DONE     ${TAG}  ERROR (exit ${CLAUDE_EXIT})" >> "$PROGRESS_LOG"
+    fi
+    return
+  fi
+
+  if [[ -z "$RESPONSE" ]]; then
+    log_eval "ERROR: claude exited 0 but returned empty response"
+    print_error_detail "empty-response" "0" "" "$TAG" "$MCP_CONFIG" "$RESPONSE_FILE" >> "$LOG_FILE" 2>&1
+    echo "ERROR|empty response despite exit code 0" > "$VERDICT_FILE"
+    echo "${PROG_PFX} DONE     ${TAG}  ERROR (empty response)" >> "$PROGRESS_LOG"
+    return
+  fi
+  local BYTES
+  BYTES=$(echo "$RESPONSE" | wc -c | tr -d ' ')
+  log_eval "Response: ${BYTES} bytes → $RESPONSE_FILE"
+
+  # ── Step 2: Grade the response ─────────────────────────────
+  local VERDICT REASON
+  if [[ "$GRADING_MODE" == "bash" ]]; then
+    log_eval "Grading (bash — should_trigger=$SHOULD_TRIGGER)"
+    local BASH_VERDICT
+    BASH_VERDICT=$(grade_bash "$RESPONSE" "$SHOULD_TRIGGER")
+    echo "$BASH_VERDICT" > "$GRADE_FILE"
+    VERDICT="${BASH_VERDICT%%|*}"
+    REASON="${BASH_VERDICT#*|}"
+  else
+    log_eval "Grading response (timeout ${GRADE_TIMEOUT}s)..."
+    local GRADE_PROMPT="You are an eval grader. Determine if the response PASSES or FAILS.
 
 ## Eval prompt
 $PROMPT
@@ -380,14 +477,14 @@ $PROMPT
 ## Expected behavior
 $EXPECTED"
 
-      if [[ -n "$EXPECTATIONS" ]]; then
-        GRADE_PROMPT="$GRADE_PROMPT
+    if [[ -n "$EXPECTATIONS" ]]; then
+      GRADE_PROMPT="$GRADE_PROMPT
 
 ## Specific expectations (ALL must be met to pass)
 $EXPECTATIONS"
-      fi
+    fi
 
-      GRADE_PROMPT="$GRADE_PROMPT
+    GRADE_PROMPT="$GRADE_PROMPT
 
 ## Actual response
 $RESPONSE
@@ -404,38 +501,49 @@ EXPECTATION_RESULTS:
 VERDICT: PASS or FAIL
 REASON: <one-line summary>"
 
-      local GRADE_STDERR_FILE="$RESULTS_DIR/${SKILL_NAME}_eval${EVAL_ID}_grade_stderr.txt"
-      local GRADE GRADE_EXIT=0
-      GRADE=$(echo "$GRADE_PROMPT" | timeout "$GRADE_TIMEOUT" claude -p --model sonnet 2>"$GRADE_STDERR_FILE") || GRADE_EXIT=$?
-      if [[ $GRADE_EXIT -ne 0 ]]; then
-        echo "    GRADE ERROR: grader call failed (exit $GRADE_EXIT)"
-        print_error_detail "grade" "$GRADE_EXIT" "$GRADE_STDERR_FILE" "$TAG" "$MCP_CONFIG" "$RESPONSE_FILE"
-        [[ ! -s "$GRADE_STDERR_FILE" ]] && rm -f "$GRADE_STDERR_FILE"
-        echo "GRADE_ERROR|grader exited with code $GRADE_EXIT" > "$VERDICT_FILE"
-        echo "${PROG_PFX} DONE     ${TAG}  ERROR (grade fail)" >> "$PROGRESS_LOG"
-        return
-      fi
+    local GRADE_STDERR_FILE="$RESULTS_DIR/${SKILL_NAME}_eval${EVAL_ID}_grade_stderr.txt"
+    local GRADE GRADE_EXIT=0
+    T_START=$(date +%s)
+    GRADE=$(echo "$GRADE_PROMPT" | timeout --kill-after=10 "$GRADE_TIMEOUT" claude -p --bare --model sonnet 2>"$GRADE_STDERR_FILE") || GRADE_EXIT=$?
+    T_END=$(date +%s)
+    T_ELAPSED=$((T_END - T_START))
+
+    log_eval "Grader exited with code $GRADE_EXIT after ${T_ELAPSED}s"
+
+    if [[ -s "$GRADE_STDERR_FILE" ]]; then
+      log_eval "Grade stderr ($(wc -c < "$GRADE_STDERR_FILE" | tr -d ' ') bytes):"
+      while IFS= read -r stderr_line; do
+        log_eval "  $stderr_line"
+      done < <(head -10 "$GRADE_STDERR_FILE")
+    fi
+
+    if [[ $GRADE_EXIT -ne 0 ]]; then
+      log_eval "GRADE ERROR: grader call failed (exit $GRADE_EXIT after ${T_ELAPSED}s)"
+      print_error_detail "grade" "$GRADE_EXIT" "$GRADE_STDERR_FILE" "$TAG" "$MCP_CONFIG" "$RESPONSE_FILE" >> "$LOG_FILE" 2>&1
       [[ ! -s "$GRADE_STDERR_FILE" ]] && rm -f "$GRADE_STDERR_FILE"
-
-      echo "$GRADE" > "$GRADE_FILE"
-
-      VERDICT=$(echo "$GRADE" | grep -oP 'VERDICT:\s*\K\S+' | head -1 || echo "UNKNOWN")
-      REASON=$(echo "$GRADE" | grep -oP 'REASON:\s*\K.*' | head -1 || echo "could not extract reason")
+      echo "GRADE_ERROR|grader exited with code $GRADE_EXIT" > "$VERDICT_FILE"
+      echo "${PROG_PFX} DONE     ${TAG}  ERROR (grade fail)" >> "$PROGRESS_LOG"
+      return
     fi
+    [[ ! -s "$GRADE_STDERR_FILE" ]] && rm -f "$GRADE_STDERR_FILE"
 
-    echo "${VERDICT}|${REASON}" > "$VERDICT_FILE"
-    echo "${PROG_PFX} DONE     ${TAG}  ${VERDICT}" >> "$PROGRESS_LOG"
+    echo "$GRADE" > "$GRADE_FILE"
+    VERDICT=$(echo "$GRADE" | grep -oP 'VERDICT:\s*\K\S+' | head -1 || echo "UNKNOWN")
+    REASON=$(echo "$GRADE" | grep -oP 'REASON:\s*\K.*' | head -1 || echo "could not extract reason")
+  fi
 
-    if [[ "$VERDICT" == "PASS" ]]; then
-      echo "    PASS — $REASON"
-    elif [[ "$VERDICT" == "FAIL" ]]; then
-      echo "    FAIL — $REASON"
-      echo "    Grader explanation (first 8 lines):"
-      head -8 "$GRADE_FILE" | sed 's/^/      /'
-    else
-      echo "    UNKNOWN — could not parse verdict"
-    fi
-  } > "$LOG_FILE" 2>&1
+  echo "${VERDICT}|${REASON}" > "$VERDICT_FILE"
+  echo "${PROG_PFX} DONE     ${TAG}  ${VERDICT}" >> "$PROGRESS_LOG"
+
+  log_eval "VERDICT: $VERDICT — $REASON"
+  if [[ "$VERDICT" == "FAIL" ]]; then
+    log_eval "Grader explanation (first 8 lines):"
+    head -8 "$GRADE_FILE" | while IFS= read -r grade_line; do
+      log_eval "  $grade_line"
+    done
+  elif [[ "$VERDICT" != "PASS" ]]; then
+    log_eval "WARNING: could not parse verdict from grader output"
+  fi
 }
 
 # ---------------------------------------------------------------------------
@@ -492,11 +600,17 @@ $(cat "$SKILL_MD")
       continue
     fi
 
-    PROMPT=$(jq -r ".evals[$i].prompt" "$EVAL_FILE" | sed "s|\\\$LOCI_TEST_BLE_ROOT|$BLE_ROOT|g")
+    PROMPT=$(jq -r ".evals[$i].prompt" "$EVAL_FILE")
     EXPECTED=$(jq -r ".evals[$i].expected_output" "$EVAL_FILE")
     EXPECTATIONS=$(jq -r ".evals[$i].assertions // [] | .[].text" "$EVAL_FILE" 2>/dev/null || true)
     GRADING_MODE=$(jq -r ".evals[$i].grading_mode // \"claude\"" "$EVAL_FILE")
+    # Use null check — jq's // operator treats false as falsy and would substitute the default
     SHOULD_TRIGGER=$(jq -r ".evals[$i].should_trigger | if . == null then true else . end" "$EVAL_FILE")
+
+    # Expand $LOCI_TEST_BLE_ROOT in prompt/expected to the actual BLE_ROOT path
+    PROMPT="${PROMPT//\$LOCI_TEST_BLE_ROOT/$BLE_ROOT}"
+    EXPECTED="${EXPECTED//\$LOCI_TEST_BLE_ROOT/$BLE_ROOT}"
+    EXPECTATIONS="${EXPECTATIONS//\$LOCI_TEST_BLE_ROOT/$BLE_ROOT}"
 
     JOB_SKILLS+=("$SKILL_NAME")
     JOB_IDS+=("$EVAL_ID")
@@ -537,9 +651,17 @@ echo ""
 # Launch jobs with concurrency limit
 # ---------------------------------------------------------------------------
 PROGRESS_LOG="$RESULTS_DIR/.progress"
-touch "$PROGRESS_LOG"
+MASTER_LOG="$RESULTS_DIR/master.log"
+touch "$PROGRESS_LOG" "$MASTER_LOG"
 tail -f "$PROGRESS_LOG" &
 TAIL_PID=$!
+
+# Trap to ensure tail -f is killed on exit/interrupt
+cleanup_tail() {
+  kill "$TAIL_PID" 2>/dev/null
+  wait "$TAIL_PID" 2>/dev/null
+}
+trap cleanup_tail EXIT
 
 RUNNING=0
 declare -a PIDS=()
@@ -571,13 +693,16 @@ for (( j=0; j<TOTAL; j++ )); do
   fi
 done
 
-# Wait for all remaining jobs
-wait
-
-# Give tail a moment to flush the last lines, then stop it
+# Kill tail FIRST — so the subsequent `wait` only blocks on eval jobs.
 sleep 0.3
 kill "$TAIL_PID" 2>/dev/null
-wait "$TAIL_PID" 2>/dev/null
+wait "$TAIL_PID" 2>/dev/null || true
+trap - EXIT
+
+# Now wait for remaining eval jobs (tail is already gone).
+for pid in "${PIDS[@]}"; do
+  wait "$pid" 2>/dev/null || true
+done
 echo ""
 
 # ---------------------------------------------------------------------------
@@ -601,16 +726,14 @@ for (( j=0; j<TOTAL; j++ )); do
     CURRENT_SKILL="$SKILL_NAME"
   fi
 
-  # Print buffered log
-  EVAL_FILE_STEM_R="${EVAL_FILE_NAME%.json}"
-  LOG_FILE="$RESULTS_DIR/${SKILL_NAME}_${EVAL_FILE_STEM_R}_eval${EVAL_ID}_log.txt"
+  # Print buffered log (kept on disk for post-mortem)
+  LOG_FILE="$RESULTS_DIR/${SKILL_NAME}_eval${EVAL_ID}_log.txt"
   if [[ -f "$LOG_FILE" ]]; then
     cat "$LOG_FILE"
-    rm -f "$LOG_FILE"
   fi
 
   # Read verdict
-  VERDICT_FILE="$RESULTS_DIR/${SKILL_NAME}_${EVAL_FILE_STEM_R}_eval${EVAL_ID}_verdict.txt"
+  VERDICT_FILE="$RESULTS_DIR/${SKILL_NAME}_eval${EVAL_ID}_verdict.txt"
   if [[ ! -f "$VERDICT_FILE" ]]; then
     echo -e "  ${EVAL_FILE_NAME}  ${EVAL_ID}: ${RED}ERROR${NC} — no verdict produced"
     ERRORED=$((ERRORED + 1))
@@ -663,6 +786,7 @@ echo -e "  ${RED}Failed:  $FAILED${NC}"
 echo -e "  ${YELLOW}Errors:  $ERRORED${NC}"
 echo ""
 echo "Report: $RESULTS_DIR/report.md"
+echo "Master log: $MASTER_LOG"
 
 if (( FAILED + ERRORED > 0 )); then
   exit 1
