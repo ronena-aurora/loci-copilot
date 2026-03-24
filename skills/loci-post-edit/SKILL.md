@@ -16,6 +16,9 @@ This skill merges execution-trace (timing/energy) and control-flow (CFG)
 analysis into a single post-edit report. It compares pre-edit and post-edit
 compiled artifacts to show exactly how the change affects hardware execution.
 
+
+Check that loci MCP is connected and authenticated, you see the tools before running the preflight steps that require it. If the MCP is unavailable request the user to authenticate it. For plugin to work mcp should be authenticated and connected.
+
 ## Step 0: Check session context
 
 Read architecture and compiler from the LOCI session context (the
