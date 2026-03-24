@@ -4,11 +4,7 @@
   "note": "Set $LOCI_TEST_BLE_ROOT to your local BLE project root before running.",
   "evals": [
     {
-<<<<<<< Updated upstream
       "id": "pf-scenario-1",
-=======
-      "id": 126,
->>>>>>> Stashed changes
       "should_trigger": true,
       "category": "call-graph-RISK",
       "prompt": "Add a call to osal_msg_allocate at the top of osal_set_event in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/osal/src/common/osal.c to pre-allocate a log entry for the event before posting it. osal_set_event is called from interrupt context on the BLE stack and must return in under 5μs at 48 MHz.",
