@@ -11,6 +11,7 @@ Subcommands:
   extract-symbols    — Symbol map from an ELF
   diff-elfs          — Compare two ELF binaries
   blocks-to-timing   — Transform blocks CSV to timing-backend CSV format
+  stack-depth        — Worst-case stack depth analysis via call-graph traversal
 """
 
 # ---------------------------------------------------------------------------
@@ -599,6 +600,58 @@ def get_cfg_text(detected_arch, files, functions):
     return cfg_text
 
 
+def stack_depth(elf_path: str | None = None,
+                asm_path: str | None = None,
+                callgraph_dot_path: str | None = None,
+                architecture: str | None = None,
+                entry_functions: list[str] | None = None,
+                stack_budget: int | None = None,
+                threshold: int = 50,
+                max_recursion_depth: int = 1,
+                unknown_callee_size: int = 64) -> dict:
+    """Run stack depth analysis via the wheel's stack_depth module.
+
+    Two paths:
+      - Full ELF (elf_path): runs full disassembly + call-graph extraction
+      - Fast/incremental (asm_path): reuses existing .asm and optional .callgraph.dot files
+    """
+    from loci.service.asmslicer.stack_depth import (
+        analyze_stack_depth as _analyze_elf,
+        analyze_from_files as _analyze_files,
+    )
+
+    if asm_path:
+        # Fast path: reuse existing asmslicer output files
+        arch = resolve_arch(architecture)
+        if not arch:
+            return {"error": "Architecture is required when using --asm-path. "
+                    f"Supported: {', '.join(sorted(ARCH_ALIASES.keys()))}"}
+        return _analyze_files(
+            asm_path=asm_path,
+            architecture=arch,
+            callgraph_dot_path=callgraph_dot_path,
+            entry_functions=entry_functions,
+            stack_budget=stack_budget,
+            threshold_pct=threshold,
+            max_recursion_depth=max_recursion_depth,
+            unknown_callee_size=unknown_callee_size,
+        )
+    elif elf_path:
+        # Full ELF path
+        arch = resolve_arch(architecture)
+        return _analyze_elf(
+            elf_path=elf_path,
+            architecture=arch,
+            entry_functions=entry_functions,
+            stack_budget=stack_budget,
+            threshold_pct=threshold,
+            max_recursion_depth=max_recursion_depth,
+            unknown_callee_size=unknown_callee_size,
+        )
+    else:
+        return {"error": "Either --elf-path or --asm-path is required"}
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="asm-analyze",
@@ -667,6 +720,31 @@ def main():
     p_cfg.add_argument("--functions", required=False,
                            help="Comma-separated function names to extract (omit to extract all functions)")
 
+    # stack-depth
+    p_stack = subparsers.add_parser(
+        "stack-depth",
+        help="Worst-case stack depth analysis via call-graph traversal",
+    )
+    p_stack_input = p_stack.add_mutually_exclusive_group(required=True)
+    p_stack_input.add_argument("--elf-path", default=None,
+                               help="Path to a linked ELF binary (full call-graph analysis)")
+    p_stack_input.add_argument("--asm-path", default=None,
+                               help="Path to .asm file from asmslicer (fast incremental path)")
+    p_stack.add_argument("--callgraph-dot-path", default=None,
+                         help="Path to .callgraph.dot file (used with --asm-path)")
+    p_stack.add_argument("--arch", default=None,
+                         help="Target architecture (required with --asm-path, auto-detected with --elf-path)")
+    p_stack.add_argument("--entry-functions", default=None,
+                         help="Comma-separated entry-point function names (auto-detect roots if omitted)")
+    p_stack.add_argument("--stack-budget", type=int, default=None,
+                         help="Configured stack size in bytes (enables usage %% and verdict)")
+    p_stack.add_argument("--threshold", type=int, default=50,
+                         help="Max allowed usage as percentage of budget (default: 50)")
+    p_stack.add_argument("--max-recursion-depth", type=int, default=1,
+                         help="Bounded recursion estimate depth (default: 1)")
+    p_stack.add_argument("--unknown-callee-size", type=int, default=64,
+                         help="Assumed frame size in bytes for unknown/external callees (default: 64)")
+
     args = parser.parse_args()
 
     try:
@@ -709,6 +787,20 @@ def main():
                 elf_path=args.elf_path,
                 architecture=args.arch,
                 functions=args.functions,
+            )
+        elif args.command == "stack-depth":
+            entry_funcs = ([f.strip() for f in args.entry_functions.split(",")]
+                           if args.entry_functions else None)
+            result = stack_depth(
+                elf_path=args.elf_path,
+                asm_path=args.asm_path,
+                callgraph_dot_path=args.callgraph_dot_path,
+                architecture=args.arch,
+                entry_functions=entry_funcs,
+                stack_budget=args.stack_budget,
+                threshold=args.threshold,
+                max_recursion_depth=args.max_recursion_depth,
+                unknown_callee_size=args.unknown_callee_size,
             )
         else:
             result = {"error": f"Unknown command: {args.command}"}
