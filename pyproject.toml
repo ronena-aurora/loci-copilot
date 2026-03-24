@@ -1,6 +1,6 @@
 [project]
 name = "loci-plugin"
-version = "0.0.1"
+version = "0.0.2"
 description = "Claude Code plugin for C/C++ safety analysis and execution-aware instrumentation"
 requires-python = ">=3.12"
 

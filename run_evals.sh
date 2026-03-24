@@ -477,14 +477,14 @@ $PROMPT
 ## Expected behavior
 $EXPECTED"
 
-    if [[ -n "$EXPECTATIONS" ]]; then
-      GRADE_PROMPT="$GRADE_PROMPT
+  if [[ -n "$EXPECTATIONS" ]]; then
+    GRADE_PROMPT="$GRADE_PROMPT
 
 ## Specific expectations (ALL must be met to pass)
 $EXPECTATIONS"
-    fi
+  fi
 
-    GRADE_PROMPT="$GRADE_PROMPT
+  GRADE_PROMPT="$GRADE_PROMPT
 
 ## Actual response
 $RESPONSE
@@ -520,12 +520,12 @@ REASON: <one-line summary>"
     if [[ $GRADE_EXIT -ne 0 ]]; then
       log_eval "GRADE ERROR: grader call failed (exit $GRADE_EXIT after ${T_ELAPSED}s)"
       print_error_detail "grade" "$GRADE_EXIT" "$GRADE_STDERR_FILE" "$TAG" "$MCP_CONFIG" "$RESPONSE_FILE" >> "$LOG_FILE" 2>&1
-      [[ ! -s "$GRADE_STDERR_FILE" ]] && rm -f "$GRADE_STDERR_FILE"
-      echo "GRADE_ERROR|grader exited with code $GRADE_EXIT" > "$VERDICT_FILE"
-      echo "${PROG_PFX} DONE     ${TAG}  ERROR (grade fail)" >> "$PROGRESS_LOG"
-      return
-    fi
     [[ ! -s "$GRADE_STDERR_FILE" ]] && rm -f "$GRADE_STDERR_FILE"
+    echo "GRADE_ERROR|grader exited with code $GRADE_EXIT" > "$VERDICT_FILE"
+    echo "${PROG_PFX} DONE     ${TAG}  ERROR (grade fail)" >> "$PROGRESS_LOG"
+    return
+  fi
+  [[ ! -s "$GRADE_STDERR_FILE" ]] && rm -f "$GRADE_STDERR_FILE"
 
     echo "$GRADE" > "$GRADE_FILE"
     VERDICT=$(echo "$GRADE" | grep -oP 'VERDICT:\s*\K\S+' | head -1 || echo "UNKNOWN")
@@ -606,6 +606,11 @@ $(cat "$SKILL_MD")
     GRADING_MODE=$(jq -r ".evals[$i].grading_mode // \"claude\"" "$EVAL_FILE")
     # Use null check — jq's // operator treats false as falsy and would substitute the default
     SHOULD_TRIGGER=$(jq -r ".evals[$i].should_trigger | if . == null then true else . end" "$EVAL_FILE")
+
+    # Expand $LOCI_TEST_BLE_ROOT in prompt/expected to the actual BLE_ROOT path
+    PROMPT="${PROMPT//\$LOCI_TEST_BLE_ROOT/$BLE_ROOT}"
+    EXPECTED="${EXPECTED//\$LOCI_TEST_BLE_ROOT/$BLE_ROOT}"
+    EXPECTATIONS="${EXPECTATIONS//\$LOCI_TEST_BLE_ROOT/$BLE_ROOT}"
 
     # Expand $LOCI_TEST_BLE_ROOT in prompt/expected to the actual BLE_ROOT path
     PROMPT="${PROMPT//\$LOCI_TEST_BLE_ROOT/$BLE_ROOT}"
