@@ -34,28 +34,45 @@ preflight report as a section of the plan before listing the edit steps.
 
 ## The checks
 
+## Step 0: Check session context
+
+Read architecture and compiler from the LOCI session context (the
+`system-reminder` block emitted at session start). Look for:
+
+```
+Target: <target>, Compiler: <compiler>, Build: <build>
+LOCI target: <loci_target>
+```
+
+Map the LOCI target to loci MCP suported architectues and binary targets:
+
+| LOCI target |   Time from CPU  |
+|---|---|
+| aarch64 | A53 |
+| armv7e-m | CortexM4|
+| armv6-m | CortexM0P |
+| tc3xx | TC399 |
+
+If the architecture is **not** in this table, emit and stop:
+
+```
+
+Supported: aarch64 , armv7e-m , armv6-m , tc3xx
+```
+If no compiler was detected, inform the user and stop.
+
+Do **not** re-run detection scripts — use the values already in the session context.
+
 Check that loci MCP is connected and authenticated, you see the tools before running the preflight steps that require it. If the MCP is unavailable request the user to authenticate it. For plugin to work mcp should be authenticated and connected.
 
 
 ### 1. Call graph (CFG analysis)
 *What does the assembly-level control flow of the callees actually look like?*
 
-Use the `asm-analyze` command from the LOCI session context. The goal is to
-analyze existing compiled callees — functions the new code will call — before
+Use the asm-analyze command, which is a python script from lib/asm_analyze.py in the plugin dir.
+Use the python version from .venv folder in the plugin dir for running python scripts.
+The goal is to analyze existing compiled callees — functions the new code will call — before
 writing anything. Follow the control-flow skill's workflow:
-
-**Resolve architecture and toolchain** — in this order:
-1. **User's own binary** — if already compiled, reuse it. Skip to CFG extraction.
-2. **Incremental objects** — check `.loci-build/<arch>/` for existing `.o` files.
-3. **Any ELF/object in the project** — scan for `.elf`, `.out`, `.o`, `.axf`.
-4. **No binary** — cross-compile the relevant source file to get a binary, then
-   extract. Default to aarch64 if the user hasn't specified a target:
-
-   | Architecture | Compiler | Flags | Build dir |
-   |---|---|---|---|
-   | aarch64 | `aarch64-linux-gnu-g++` | `-O2 -march=armv8-a` | `.loci-build/aarch64/` |
-   | cortexm | `arm-none-eabi-g++` | `-O2 -mcpu=cortex-m4 -mthumb` | `.loci-build/cortexm/` |
-   | tricore | `tricore-elf-g++` | `-O2 -mcpu=tc3xx` | `.loci-build/tricore/` |
 
 **Incremental path (preferred)** — if a previous `.o` exists:
 1. Save the existing `.o` as `.o.prev`
@@ -63,22 +80,24 @@ writing anything. Follow the control-flow skill's workflow:
 
 4. Extract CFGs for the callees the new function will invoke:
    ```
-   <asm-analyze-cmd> extract-cfg --elf-path .o --functions <callees...>
+   <asm-analyze-cmd> extract-assembly --elf-path .o --functions <callee_1,callee_2...>
    ```
 
 **Full path** — if no `.o` exists yet:
 1. Cross-compile the relevant source file
 2. Extract CFGs for the callees:
    ```
-   <asm-analyze-cmd> extract-cfg --elf-path <binary> --functions <callees...>
+   <asm-analyze-cmd> extract-assembly --elf-path <binary> --functions <callee_1,callee_2...>
    ```
+
+The JSON contains the `control_flow_graph` field that contains annotated CFG's in text-format optimized for LLM analysis.
+
+The JSON output contains `timing_csv` and `timing_architecture` fields needed
+for the MCP call.
+
 
 **Timing via LOCI MCP** — immediately after CFG extraction, extract assembly
 timing for the same callees to get hardware-accurate latency before writing:
-
-```
-<asm-analyze-cmd> extract-assembly --elf-path <binary> --functions <callees...> --arch <loci_target>
-```
 
 Call `mcp__loci-plugin__get_assembly_block_exec_behavior` with:
 - `csv_text`: the `timing_csv` field from the output above
