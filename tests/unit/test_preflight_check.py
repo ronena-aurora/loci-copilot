@@ -4,26 +4,16 @@ import pytest
 
 from preflight_check import (
     Finding,
-    _check_arithmetic,
     _check_call_graph,
-    _check_resources,
     extract_code,
     find_new_functions,
     render_report,
 )
 from tests.fixtures.cpp_samples import (
     CLEAN_CODE,
-    DOUBLE_FREE_CODE,
-    POST_MOVE_USE_CODE,
     RECURSION_NO_GUARD_CODE,
     RECURSION_WITH_GUARD_CODE,
-    RETURN_ADDR_OF_LOCAL_CODE,
-    SHIFT_OVERFLOW_CODE,
-    SHIFT_SAFE_CODE,
-    SIGNED_OVERFLOW_CODE,
     STATIC_INIT_CODE,
-    UNSIGNED_SUB_CODE,
-    USE_AFTER_FREE_CODE,
 )
 
 pytestmark = pytest.mark.unit
@@ -103,75 +93,6 @@ class TestCheckCallGraph:
                     for f in findings)
 
 
-# -- _check_arithmetic ----------------------------------------------------
-
-class TestCheckArithmetic:
-    def test_signed_overflow(self):
-        funcs = find_new_functions(SIGNED_OVERFLOW_CODE)
-        _, lines = funcs[0]
-        findings = _check_arithmetic(lines)
-        assert any(f.severity == "RISK" and "overflow" in f.message.lower()
-                    for f in findings)
-
-    def test_unsigned_sub(self):
-        funcs = find_new_functions(UNSIGNED_SUB_CODE)
-        _, lines = funcs[0]
-        findings = _check_arithmetic(lines)
-        assert any(f.severity == "RISK" and "unsigned" in f.message.lower()
-                    for f in findings)
-
-    def test_shift_block(self):
-        funcs = find_new_functions(SHIFT_OVERFLOW_CODE)
-        _, lines = funcs[0]
-        findings = _check_arithmetic(lines)
-        assert any(f.severity == "BLOCK" and "shift" in f.message.lower()
-                    for f in findings)
-
-    def test_shift_safe(self):
-        funcs = find_new_functions(SHIFT_SAFE_CODE)
-        _, lines = funcs[0]
-        findings = _check_arithmetic(lines)
-        assert not any("shift" in f.message.lower() for f in findings)
-
-
-# -- _check_resources ------------------------------------------------------
-
-class TestCheckResources:
-    def test_use_after_free(self):
-        funcs = find_new_functions(USE_AFTER_FREE_CODE)
-        _, lines = funcs[0]
-        findings = _check_resources(lines)
-        assert any(f.severity == "BLOCK" and "use-after-free" in f.message.lower()
-                    for f in findings)
-
-    def test_double_free(self):
-        funcs = find_new_functions(DOUBLE_FREE_CODE)
-        _, lines = funcs[0]
-        findings = _check_resources(lines)
-        assert any(f.severity == "BLOCK" and "double-free" in f.message.lower()
-                    for f in findings)
-
-    def test_return_addr_of_local(self):
-        funcs = find_new_functions(RETURN_ADDR_OF_LOCAL_CODE)
-        _, lines = funcs[0]
-        findings = _check_resources(lines)
-        assert any(f.severity == "BLOCK" and "address" in f.message.lower()
-                    for f in findings)
-
-    def test_post_move_use(self):
-        funcs = find_new_functions(POST_MOVE_USE_CODE)
-        _, lines = funcs[0]
-        findings = _check_resources(lines)
-        assert any(f.severity == "RISK" and "move" in f.message.lower()
-                    for f in findings)
-
-    def test_clean(self):
-        funcs = find_new_functions(CLEAN_CODE)
-        _, lines = funcs[0]
-        findings = _check_resources(lines)
-        assert findings == []
-
-
 # -- render_report ---------------------------------------------------------
 
 class TestRenderReport:
@@ -180,11 +101,11 @@ class TestRenderReport:
         assert "all clear" in report
 
     def test_risk(self):
-        findings = [Finding("arithmetic", "RISK", "overflow possible")]
+        findings = [Finding("call_graph", "RISK", "recursion without guard")]
         report = render_report("risky_func", findings)
         assert "PROCEED WITH CAUTION" in report
 
     def test_block(self):
-        findings = [Finding("resources", "BLOCK", "use-after-free")]
+        findings = [Finding("call_graph", "BLOCK", "unbounded recursion")]
         report = render_report("bad_func", findings)
         assert "STOP" in report

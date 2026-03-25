@@ -1,6 +1,6 @@
 {
   "skill_name": "loci-preflight",
-  "description": "Tests whether the skill surfaces the most critical real-world bugs in BLE + RTOS + Cortex-M4 development that SKILL.md does not explicitly list but the skill should reason about during preflight: ISR/task context safety, unchecked NULL returns from allocators, stack depth on a constrained embedded stack, and unaligned pointer casts that cause ARM hardfaults. All functions are compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out.",
+  "description": "Tests whether the skill surfaces critical real-world bugs in BLE + RTOS development using tool-backed analysis: ISR/task context safety from CFG analysis, energy reporting for embedded callees, hard stop on missing compiler, and partial compilation across supported architectures. All functions are compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out.",
   "note": "Set $LOCI_TEST_BLE_ROOT to your local BLE project root before running.",
   "evals": [
     {
@@ -28,54 +28,58 @@
     {
       "id": "pf-rtos-2",
       "should_trigger": true,
-      "category": "null-return-unchecked",
-      "prompt": "Add a per-message scratch buffer inside osal_msg_receive in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/osal/src/common/osal.c — allocate it with osal_mem_alloc(MSG_SCRATCH_SIZE) at the top of the function, use it to copy the message header, then free it before returning. Do not add a NULL check on the allocation result.",
-      "expected_output": "A preflight resources section that flags an unchecked NULL return: osal_mem_alloc returns NULL when the heap is exhausted, which is a normal condition on a constrained BLE device. Dereferencing a NULL pointer on Cortex-M4 causes a hardfault. The skill must catch that the allocation result is used without a NULL guard.",
+      "category": "energy-isr-context",
+      "prompt": "Add a call to GAPBondMgr_FindAddr inside osal_set_event in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/osal/src/common/osal.c to verify bond status before posting events. osal_set_event is called from ISR context and must return in under 5μs at 48 MHz. Both functions are compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out.",
+      "expected_output": "A preflight report that flags BOTH a call graph/latency risk (GAPBondMgr_FindAddr is too slow for ISR context) AND reports the energy cost of GAPBondMgr_FindAddr in uWs.",
       "files": [],
       "assertions": [
         {
           "text": "Response includes a preflight report section",
-          "description": "Using the return value of osal_mem_alloc without a NULL check requires preflight"
+          "description": "Adding a heavyweight callee in ISR context requires preflight"
         },
         {
-          "text": "Preflight resources or call graph section flags that osal_mem_alloc can return NULL and the result is used without a NULL check — dereferencing NULL on Cortex-M4 is a hardfault",
-          "description": "Unchecked NULL from an allocator is the most common source of silent hardfaults on embedded BLE devices"
+          "text": "Preflight flags a call graph or latency risk — GAPBondMgr_FindAddr is not suitable for ISR context with a 5μs budget",
+          "description": "CFG-based analysis must detect the timing violation"
+        },
+        {
+          "text": "Preflight reports energy values in uWs for GAPBondMgr_FindAddr",
+          "description": "Energy must be reported alongside the timing risk"
         }
       ]
     },
     {
       "id": "pf-rtos-3",
       "should_trigger": true,
-      "category": "stack-depth",
-      "prompt": "Add a local message staging buffer inside GAPBondMgr_ProcessEvent in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c — declare uint8_t stagingBuf[512] on the stack to hold a copy of the incoming bond event before processing it. GAPBondMgr_ProcessEvent is called from the BLE stack task which has a 768-byte stack.",
-      "expected_output": "A preflight section that flags a stack overflow risk: a 512-byte local buffer inside a function whose call stack already consumes most of a 768-byte task stack will overflow it. On Cortex-M4 a stack overflow corrupts adjacent memory or triggers a MemManage fault with no useful diagnostic. The skill must flag the stack budget violation.",
+      "category": "hard-stop-no-compiler-embedded",
+      "prompt": "Implement a packet counter inside a BLE HCI function in /tmp/embedded-rtos-project/src/hci.c. The project targets an ARM Cortex-M4 but no compiler is detected in the session context.",
+      "expected_output": "A preflight STOPPED block stating no compiler was detected. The skill must not produce any analysis output.",
       "files": [],
       "assertions": [
         {
-          "text": "Response includes a preflight report section",
-          "description": "Allocating a large stack buffer in a function with a known stack budget requires preflight"
+          "text": "Response includes 'STOPPED' or indicates the skill cannot proceed due to missing compiler",
+          "description": "No compiler detected means preflight must hard stop"
         },
         {
-          "text": "Preflight flags a stack depth or stack overflow risk — a 512-byte local buffer in a task with a 768-byte stack leaves insufficient room for the function's own frame plus any callees",
-          "description": "Stack overflow is a silent killer on Cortex-M4 embedded devices — the skill should catch large stack allocations relative to the stated task stack size"
+          "text": "Response does NOT contain 'Execution fit: GOOD' or a completed Call graph analysis",
+          "description": "No analysis output should be emitted when compilation is not possible"
         }
       ]
     },
     {
       "id": "pf-rtos-4",
       "should_trigger": true,
-      "category": "alignment-pointer-cast",
-      "prompt": "Add a fast header parser inside HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c — cast the incoming pData uint8_t pointer directly to a hciDataPacket_t* struct pointer to read the opcode and length fields in one operation: hciDataPacket_t *hdr = (hciDataPacket_t*)pData. pData points into a received BLE packet buffer that is byte-aligned but not guaranteed to be 4-byte aligned.",
-      "expected_output": "A preflight arithmetic or call graph section that flags an alignment hazard: casting a byte-aligned uint8_t pointer to a struct pointer on Cortex-M4 causes a UsageFault hardfault if the struct contains uint32_t or uint16_t fields and the pointer is not naturally aligned. The skill must flag the unaligned cast and recommend memcpy-based deserialization instead.",
+      "category": "partial-compilation-any-arch",
+      "prompt": "Add a call to osal_set_event inside GAPBondMgr_ProcessEvent in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c to post a notification event after processing bond changes. The source file can be compiled with -c to produce a .o for analysis. Both functions are compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out.",
+      "expected_output": "A full preflight report produced from analysis of the compiled artifact — with Call graph, Latency, Energy (in uWs), and Execution fit. The skill should use the .o or binary path to extract assembly and query the LOCI MCP for timing and energy.",
       "files": [],
       "assertions": [
         {
-          "text": "Response includes a preflight report section",
-          "description": "Casting a potentially unaligned pointer to a wider struct type on Cortex-M4 requires preflight"
+          "text": "Response includes a preflight report with Call graph, Latency, Energy, and Execution fit lines",
+          "description": "Partial compilation must produce a complete preflight report"
         },
         {
-          "text": "Preflight flags an alignment hazard or unaligned memory access risk — casting a byte-aligned uint8_t pointer to a struct with wider fields causes a hardfault on Cortex-M4 when the address is not naturally aligned",
-          "description": "ARM Cortex-M4 raises a UsageFault on unaligned word access when UNALIGN_TRP is set — a real and common source of field hardfaults in BLE packet parsing code"
+          "text": "Preflight reports energy values in uWs from the LOCI MCP",
+          "description": "Energy must come from the MCP, reported in uWs"
         }
       ]
     }

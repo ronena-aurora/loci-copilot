@@ -3,10 +3,8 @@
 PreToolUse hook — LOCI preflight static scanner.
 
 Fires before Write/Edit/MultiEdit. If the incoming content introduces a new
-function definition it runs three fast pattern checks:
+function definition it runs a fast call-graph pattern check:
   1. Call graph ordering  (forward-ref / recursion hazards)
-  2. Arithmetic ranges    (overflow, wrap, bad shifts, signed/unsigned mix)
-  3. Freed-resource access (use-after-free, double-free, dangling refs)
 
 Findings are printed to stdout so Claude sees them before writing.
 The hook always exits 0 (advisory, never blocking) — the skill layer decides
@@ -45,15 +43,6 @@ _FUNC_DEF = re.compile(
 )
 
 _CALL_SITE      = re.compile(r'\b([A-Za-z_]\w*)\s*\(')
-_DELETE_PTR     = re.compile(r'\bdelete\s+(?:\[\]\s*)?(\w+)')
-_FREE_PTR       = re.compile(r'\bfree\s*\(\s*(\w+)\s*\)')
-_DEREF          = re.compile(r'(\w+)\s*(?:->|\[\s*\d)')
-_RETURN_REF     = re.compile(r'\breturn\s+(?:&|\*?\s*(?:std::)?ref\s*\()')
-_MOVE_USE       = re.compile(r'std::move\s*\(\s*(\w+)\s*\)')
-_OVERFLOW_EXPR  = re.compile(r'\b(int|long|short)\b[^;=\n]*[=+\-*]\s*\w+\s*[*+]\s*\w+')
-_UNSIGNED_SUB   = re.compile(r'\b(size_t|unsigned\s+\w*)\b[^;=\n]*-\s*\d')
-_SHIFT          = re.compile(r'<<\s*(\d+)')
-_SIGNED_UNSIG   = re.compile(r'(?:int|long|short)\s+\w+\s*[<>=!]=?\s*(?:size_t|unsigned)')
 _RECURSIVE_CALL = re.compile(r'(?P<outer>[A-Za-z_]\w*)\s*\([^)]*\)[^{]*\{[^}]*(?P=outer)\s*\(')
 
 # ── check implementations ─────────────────────────────────────────────────────
@@ -85,102 +74,6 @@ def _check_call_graph(lines: list[str], func_name: str) -> list[Finding]:
     return findings
 
 
-def _check_arithmetic(lines: list[str]) -> list[Finding]:
-    findings = []
-    for i, ln in enumerate(lines, 1):
-        if _OVERFLOW_EXPR.search(ln):
-            findings.append(Finding(
-                "arithmetic", "RISK",
-                f"Possible signed-integer overflow: '{ln.strip()}'",
-                line=i,
-            ))
-        if _UNSIGNED_SUB.search(ln):
-            findings.append(Finding(
-                "arithmetic", "RISK",
-                f"Unsigned subtraction may wrap to a huge value: '{ln.strip()}'",
-                line=i,
-            ))
-        m = _SHIFT.search(ln)
-        if m and int(m.group(1)) >= 32:
-            findings.append(Finding(
-                "arithmetic", "BLOCK",
-                f"Left-shift by {m.group(1)} bits — likely exceeds type width: '{ln.strip()}'",
-                line=i,
-            ))
-        if _SIGNED_UNSIG.search(ln):
-            findings.append(Finding(
-                "arithmetic", "RISK",
-                f"Signed/unsigned comparison without explicit cast: '{ln.strip()}'",
-                line=i,
-            ))
-    return findings
-
-
-def _check_resources(lines: list[str]) -> list[Finding]:
-    findings = []
-    body_text = "\n".join(lines)
-
-    freed: set[str] = set()
-    for i, ln in enumerate(lines, 1):
-        # Track freed pointers
-        for m in _DELETE_PTR.finditer(ln):
-            freed.add(m.group(1))
-        for m in _FREE_PTR.finditer(ln):
-            freed.add(m.group(1))
-
-        # Dereference after free
-        for m in _DEREF.finditer(ln):
-            ptr = m.group(1)
-            if ptr in freed:
-                findings.append(Finding(
-                    "resources", "BLOCK",
-                    f"Use-after-free: '{ptr}' is dereferenced after delete/free.",
-                    line=i,
-                ))
-
-        # Returning address-of local / reference
-        if _RETURN_REF.search(ln):
-            # Heuristic: if it's returning &<local> it's dangerous
-            if re.search(r'return\s+&\s*\w', ln):
-                findings.append(Finding(
-                    "resources", "BLOCK",
-                    f"Returning address of (likely) local variable — dangling reference.",
-                    line=i,
-                ))
-
-    # Double-free: same pointer freed twice
-    freed_list: list[str] = []
-    for ln in lines:
-        for m in _DELETE_PTR.finditer(ln):
-            freed_list.append(m.group(1))
-        for m in _FREE_PTR.finditer(ln):
-            freed_list.append(m.group(1))
-    seen: set[str] = set()
-    for ptr in freed_list:
-        if ptr in seen:
-            findings.append(Finding(
-                "resources", "BLOCK",
-                f"Double-free detected on '{ptr}'.",
-            ))
-        seen.add(ptr)
-
-    # std::move followed by use of the same variable
-    moved: set[str] = set()
-    for i, ln in enumerate(lines, 1):
-        for m in _MOVE_USE.finditer(ln):
-            moved.add(m.group(1))
-        for var in list(moved):
-            # Any non-assignment use after move
-            if re.search(rf'\b{re.escape(var)}\b', ln) and not _MOVE_USE.search(ln):
-                if not re.search(rf'\b{re.escape(var)}\s*=', ln):
-                    findings.append(Finding(
-                        "resources", "RISK",
-                        f"'{var}' may be used after std::move() without reassignment.",
-                        line=i,
-                    ))
-                    moved.discard(var)  # report once
-
-    return findings
 
 # ── main ──────────────────────────────────────────────────────────────────────
 
@@ -229,11 +122,11 @@ def render_report(func_name: str, findings: list[Finding]) -> str:
         return f"[loci-preflight] {func_name}: all clear"
 
     lines = [f"[loci-preflight] {func_name}"]
-    sections = {"call_graph": [], "arithmetic": [], "resources": []}
+    sections = {"call_graph": []}
     for f in findings:
         sections[f.check].append(f)
 
-    labels = {"call_graph": "Call graph", "arithmetic": "Arithmetic", "resources": "Resources"}
+    labels = {"call_graph": "Call graph"}
     for key, label in labels.items():
         items = sections[key]
         if not items:
@@ -273,11 +166,7 @@ def main():
 
     reports = []
     for func_name, body_lines in functions:
-        findings = (
-            _check_call_graph(body_lines, func_name)
-            + _check_arithmetic(body_lines)
-            + _check_resources(body_lines)
-        )
+        findings = _check_call_graph(body_lines, func_name)
         reports.append(render_report(func_name, findings))
 
     if reports:

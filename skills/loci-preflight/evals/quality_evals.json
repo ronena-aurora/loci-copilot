@@ -1,10 +1,9 @@
 {
   "skill_name": "loci-preflight",
-  "description": "Tests that the content of each preflight section is correct and specific per SKILL.md - not just present. Call graph must reference actual CFG findings. Arithmetic must name the specific hazard type and expression. Resources must map ownership across every exit path. Execution fit must follow from the findings. Uses functions compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out.",
+  "description": "Tests that the content of each preflight section is correct and specific per SKILL.md — not just present. Call graph must reference actual CFG findings. Energy must report values from the LOCI MCP. Execution fit must follow from the findings. Uses functions compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out.",
   "note": "Set $LOCI_TEST_BLE_ROOT to your local BLE project root before running.",
   "evals": [
     {
-
       "id": "pf-quality-1",
       "should_trigger": true,
       "category": "call-graph-quality-indirect-call",
@@ -65,72 +64,72 @@
     {
       "id": "pf-quality-4",
       "should_trigger": true,
-      "category": "arithmetic-quality-specific-type",
-      "prompt": "/plan Fix the allocation inside GAPBondMgr_Init in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c to pre-allocate a shadow table sized numBonds * sizeof(gattCharCfg_t) * 3. numBonds is a uint8_t parameter that can range from 1 to 255.",
-      "expected_output": "A preflight arithmetic section that names 'overflow' as the specific hazard type, identifies the exact expression (numBonds * sizeof(gattCharCfg_t) * 3), and explains that intermediate products computed in uint8_t overflow before reaching the final size_t result passed to malloc.",
+      "category": "energy-quality-per-callee",
+      "prompt": "Add a call to GAPBondMgr_FindAddr inside GAPBondMgr_ProcessEvent in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c to re-verify the bond before processing each event. Both functions are compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out.",
+      "expected_output": "A preflight report that includes per-callee energy values for GAPBondMgr_FindAddr in uWs, derived from the LOCI MCP response's energy_ws field. The energy must be a specific numeric value, not a qualitative statement.",
       "files": [],
       "assertions": [
         {
           "text": "Response includes a preflight report section",
-          "description": "malloc with a computed size from external input requires preflight"
+          "description": "Adding a callee requires preflight with energy reporting"
         },
         {
-          "text": "Preflight arithmetic section names the specific hazard type (overflow or integer overflow) and identifies the specific expression at risk (numBonds * sizeof or the product of the three factors)",
-          "description": "SKILL.md: 'is any signed multiplication or addition bounded? If the inputs come from external data or a loop counter, assume worst case.' The section must name overflow explicitly, not say 'there might be an arithmetic issue'."
+          "text": "Preflight reports a specific energy value in uWs for GAPBondMgr_FindAddr — not a qualitative statement like 'high energy' but an actual number from the MCP",
+          "description": "SKILL.md: energy_ws from the MCP response must be reported in uWs with actual values"
         }
       ]
     },
     {
       "id": "pf-quality-5",
       "should_trigger": true,
-      "category": "arithmetic-quality-unsigned-wraparound",
-      "prompt": "/plan Fix osal_mem_free in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/osal/src/common/osal_memory.c - the block free size is computed as hdr->size - OSAL_MEM_HDRSZ using unsigned types. If a corrupted header makes hdr->size smaller than OSAL_MEM_HDRSZ, the subtraction wraps to a huge positive value and corrupts the free list.",
-      "expected_output": "A preflight arithmetic section that specifically names 'unsigned wraparound' as the hazard, identifies the exact subtraction expression (hdr->size - OSAL_MEM_HDRSZ), and explains the wrap-to-MAX behavior when the left operand is smaller.",
+      "category": "energy-quality-hot-path-sum",
+      "prompt": "Add calls to both osal_msg_allocate and GAPBondMgr_FindAddr inside HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c — allocate a bond check buffer, then verify the bond status before sending. Both callees are compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out.",
+      "expected_output": "A preflight report that shows per-callee energy for both osal_msg_allocate and GAPBondMgr_FindAddr, and sums them into a hot-path total energy value.",
       "files": [],
       "assertions": [
         {
           "text": "Response includes a preflight report section",
-          "description": "Fixing an unsigned subtraction hazard requires preflight"
+          "description": "Adding multiple callees requires preflight with energy reporting"
         },
         {
-          "text": "Preflight arithmetic section names 'unsigned wraparound' or 'unsigned subtraction' as the specific hazard type and identifies the specific subtraction expression (hdr->size - OSAL_MEM_HDRSZ or equivalent)",
-          "description": "SKILL.md: 'unsigned wraparound: any subtraction on a size_t or unsigned that could reach zero?' - the section must name the type and expression, not give a generic arithmetic warning"
+          "text": "Preflight reports energy for multiple callees and includes a hot-path total or cumulative energy sum",
+          "description": "SKILL.md: 'Sum energy across the hot-path call chain' — the report must aggregate, not just list individual values"
         }
       ]
     },
     {
       "id": "pf-quality-6",
       "should_trigger": true,
-      "category": "resources-quality-path-mapping",
-      "prompt": "Refactor GAPBondMgr_Init in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c to allocate two buffers - a bond table and a CCCD shadow table - via osal_mem_alloc. Add early-return error handling if either allocation fails.",
-      "expected_output": "A preflight resources section that maps the ownership of both allocations across every exit path: the success path, the path where bond table allocation fails (nothing to free), and the path where CCCD allocation fails (bond table must be freed). The section must not say 'be careful with resources' - it must list each exit path explicitly.",
+      "category": "energy-quality-delta",
+      "prompt": "Modify HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c to add a call to GAPBondMgr_FindAddr for bond verification. The pre-edit .o exists as basic_ble.out. Show the energy delta between the baseline function and the projected version with the new callee.",
+      "expected_output": "A preflight report with a Delta section showing baseline vs projected energy with a percentage diff, similar to the loci-post-edit format.",
       "files": [],
       "assertions": [
         {
           "text": "Response includes a preflight report section",
-          "description": "Dual allocation with error paths requires preflight"
+          "description": "Modifying an existing function with a baseline artifact requires preflight with delta"
         },
         {
-          "text": "Preflight resources section maps ownership across at least two distinct exit paths - specifically the path where the first allocation fails and the path where the second allocation fails - naming which resources must be freed on each path",
-          "description": "SKILL.md: 'map the ownership of every resource the function will touch' and 'RAII gap: does every exit path release it?' - the section must enumerate paths, not give a generic reminder"
+          "text": "Preflight includes a delta or before/after comparison for energy showing baseline, projected, and percentage diff",
+          "description": "SKILL.md: when .o.prev exists, compute delta: ((post_value - pre_value) / pre_value) * 100"
         }
       ]
     },
     {
       "id": "pf-quality-7",
       "should_trigger": true,
-      "category": "resources-quality-use-after-free",
-      "prompt": "Add cleanup logic to GAPBondMgr_Init in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c - when re-initializing, free the old bond table with osal_mem_free(pBondTable), then immediately read pBondTable->numBonds to log how many entries were present before freeing.",
-      "expected_output": "A preflight resources section that flags a use-after-free: the pointer pBondTable is freed before the read of pBondTable->numBonds. The section must identify the specific pointer freed and the specific field read after the free.",
+      "category": "architecture-in-header-quality",
+      "prompt": "Add a call to osal_set_event inside GAPBondMgr_ProcessEvent in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c to post a notification event. Both functions are compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out.",
+      "expected_output": "A preflight report where the Execution section header includes the loci_target architecture identifier.",
       "files": [],
       "assertions": [
         {
           "text": "Response includes a preflight report section",
-          "description": "Freeing a pointer then reading through it requires preflight"
+          "description": "Adding a callee requires preflight"
         },
         {
-          "text": "Preflight resources section flags a use-after-free hazard - it must identify that pBondTable (or the bond table pointer) is freed before it is read, naming both the free operation and the subsequent read",
-          "description": "SKILL.md: 'use-after-free: if the function deletes or frees a pointer, is there any path that later reads or writes through it?'"
+          "text": "Preflight execution section header includes the architecture identifier (aarch64, armv7e-m, armv6-m, or tc3xx)",
+          "description": "SKILL.md output format: '### Execution (<loci_target>)' must include the target architecture"
         }
       ]
     },
@@ -138,8 +137,8 @@
       "id": "pf-quality-8",
       "should_trigger": true,
       "category": "execution-fit-quality-derives-from-findings",
-      "prompt": "Add a simple boolean guard inside HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c that returns HCI_ERROR_CODE_CONTROLLER_BUSY if a global flag hciSuspended is set - no new callees, no arithmetic, no resource allocation.",
-      "expected_output": "A preflight report where all three checks are OK because there are no new callees (call graph OK), no arithmetic expressions (arithmetic OK), and no resource allocation or ownership changes (resources OK). Execution fit must be GOOD - the skill must not invent risks that are not present.",
+      "prompt": "Add a simple boolean guard inside HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c that returns HCI_ERROR_CODE_CONTROLLER_BUSY if a global flag hciSuspended is set - no new callees, no allocation. HCI_SendDataPkt is compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out.",
+      "expected_output": "A preflight report where all checks are OK because there are no new callees (call graph OK), no timing concern (latency OK), and negligible energy (energy OK). Execution fit must be GOOD - the skill must not invent risks that are not present.",
       "files": [],
       "assertions": [
         {
@@ -148,10 +147,10 @@
         },
         {
           "text": "Preflight Execution fit is GOOD",
-          "description": "No callees, no arithmetic expressions, no resources - all checks are OK so fit must be GOOD, not ADJUST PLAN"
+          "description": "No callees, no timing risk, no energy risk - all checks are OK so fit must be GOOD, not ADJUST PLAN"
         },
         {
-          "text": "Preflight call graph, arithmetic, and resources lines all show OK (not a risk or block)",
+          "text": "Preflight call graph, latency, and energy lines all show OK (not a risk or block)",
           "description": "SKILL.md: 'Keep it short when things are clean' - the skill must not hallucinate risks when none exist"
         }
       ]

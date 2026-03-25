@@ -1,6 +1,6 @@
 {
   "skill_name": "loci-preflight",
-  "description": "Eight paired positive/negative scenarios — one with risk and one without — for each of the three checks (call graph, arithmetic, resources) plus execution fit. Every prompt uses a function compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out so asm-analyze can run on the real binary. The point is to verify the skill correctly distinguishes risk from no-risk for each parameter.",
+  "description": "Eight paired positive/negative scenarios — one with risk and one without — for call graph, energy, compilation, and execution fit. Every prompt uses a function compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out so asm-analyze can run on the real binary. The point is to verify the skill correctly distinguishes risk from no-risk for each parameter.",
   "note": "Set $LOCI_TEST_BLE_ROOT to your local BLE project root before running.",
   "evals": [
     {
@@ -38,64 +38,68 @@
     {
       "id": "pf-scenario-3",
       "should_trigger": true,
-      "category": "arithmetic-RISK",
-      "prompt": "Add a per-task bitmask check inside osal_set_event in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/osal/src/common/osal.c — before posting, compute allowedMask = (1U << taskID) and skip if the corresponding bit in a global uint32_t osalAllowedTasks is clear. taskID is the uint8_t parameter passed into osal_set_event and is not range-checked before this point.",
-      "expected_output": "Arithmetic RISK: 1U << taskID is undefined behavior when taskID >= 32 (the bit-width of uint32_t). taskID is a uint8_t that can be 0–255, so values 32–255 produce UB. The skill must flag this as a shift hazard and require a bounds check on taskID before the shift.",
+      "category": "energy-RISK",
+      "prompt": "Add a call to GAPBondMgr_FindAddr at the top of HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c to verify the peer is bonded before sending data. This is a battery-powered BLE peripheral where every function call's energy cost matters. Both functions are compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out.",
+      "expected_output": "Energy RISK: GAPBondMgr_FindAddr involves NV storage reads and RPA resolution which have significant energy cost. The preflight must report per-callee energy in uWs and flag the energy concern for a battery-powered device.",
       "files": [],
       "assertions": [
         {
-          "text": "Preflight arithmetic section shows a risk (⚠ or ✗), not OK",
-          "description": "Shifting by an unvalidated external uint8_t that can reach 32+ is a shift hazard"
+          "text": "Preflight Energy: line shows a warning or reports energy values in uWs",
+          "description": "Adding a heavyweight callee to a hot path on a battery-powered device must surface energy cost"
         },
         {
-          "text": "Preflight arithmetic section mentions shift hazard or that the shift amount can reach or exceed the bit-width of the type",
-          "description": "SKILL.md arithmetic: 'shift amount >= bit-width of the type' is the specific hazard that must be named"
+          "text": "Preflight reports per-callee energy values from the LOCI MCP",
+          "description": "Energy must come from the MCP response, not be guessed"
         }
       ]
     },
     {
       "id": "pf-scenario-4",
       "should_trigger": true,
-      "category": "arithmetic-OK",
-      "prompt": "Add a success counter inside HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c that increments a static uint32_t hciSentPktCount by 1 each time the function returns success. The counter wraps silently when it reaches UINT32_MAX.",
-      "expected_output": "Arithmetic OK: incrementing a uint32_t counter by 1 is unsigned addition. The wrap-at-UINT32_MAX behavior is intentional and documented in the prompt — it is not a bug. No overflow risk, no shift, no signed/unsigned mix, no array index.",
+      "category": "energy-OK",
+      "prompt": "Add a simple boolean guard inside HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c that returns HCI_ERROR_CODE_CONTROLLER_BUSY if a global flag hciSuspended is set — no new callees, no allocation. HCI_SendDataPkt is compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out.",
+      "expected_output": "Energy OK: no new callees are added, so no additional energy cost. The guard is a trivial load-and-branch with negligible energy impact.",
       "files": [],
       "assertions": [
         {
-          "text": "Preflight arithmetic section shows OK, not a risk",
-          "description": "Incrementing a uint32_t counter by 1 with intentional wrap is not an arithmetic hazard — the skill must not flag benign counter increments"
+          "text": "Preflight Energy: line shows OK, not a risk",
+          "description": "A trivial guard with no new callees has no energy concern — the skill must not hallucinate energy issues"
         }
       ]
     },
     {
       "id": "pf-scenario-5",
       "should_trigger": true,
-      "category": "resources-RISK",
-      "prompt": "Refactor GAPBondMgr_Init in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c to allocate a bond shadow table at startup: pShadow = osal_mem_alloc(numBonds * sizeof(gattCharCfg_t)). After the allocation, call GAPBondMgr_Register to register the GATT service. If GAPBondMgr_Register fails, return FAILURE immediately without freeing pShadow.",
-      "expected_output": "Resources RISK: pShadow is allocated before GAPBondMgr_Register is called. The early return on failure leaks pShadow — it is never freed on that path. The skill must flag this as a RAII gap and require that pShadow is freed before returning on the error path.",
+      "category": "no-compilation-STOP",
+      "prompt": "Implement a packet counter inside a function in /tmp/nonexistent-project/src/radio.c. The project targets a RISC-V RV32IMC core. There is no compiler configured and the architecture is not in the LOCI supported list.",
+      "expected_output": "Preflight STOPPED: architecture not supported. The skill must not produce any analysis output — no Call graph, Latency, Energy, or Execution fit lines.",
       "files": [],
       "assertions": [
         {
-          "text": "Preflight resources section shows a risk (⚠ or ✗), not OK",
-          "description": "An allocated pointer that is not freed on an early-return error path is a RAII gap"
+          "text": "Response includes 'STOPPED' or indicates the skill cannot proceed due to unsupported architecture",
+          "description": "RISC-V is not in the supported architecture table — preflight must hard stop"
         },
         {
-          "text": "Preflight resources section flags that pShadow (or the allocated buffer) is not freed on the GAPBondMgr_Register failure path",
-          "description": "SKILL.md resources: 'RAII gap: if a resource is acquired mid-function, does every exit path release it?'"
+          "text": "Response does NOT contain 'Execution fit: GOOD' or a Call graph analysis section",
+          "description": "No analysis output should be emitted when the architecture is unsupported"
         }
       ]
     },
     {
       "id": "pf-scenario-6",
       "should_trigger": true,
-      "category": "resources-OK",
-      "prompt": "Add a uint32_t local variable eventTimestamp inside osal_set_event in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/osal/src/common/osal.c that captures the current tick count at entry using Clock_getTicks() and is used only within the function to compute elapsed time. No heap allocation, no pointers stored outside the stack frame.",
-      "expected_output": "Resources OK: eventTimestamp is a stack-local uint32_t — it is automatically released when the function returns on any path. There is no heap allocation, no pointer stored beyond the stack frame, and no resource lifetime to manage.",
+      "category": "partial-compilation-OK",
+      "prompt": "Add a call to osal_set_event inside GAPBondMgr_ProcessEvent in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c to post a notification event after processing bond changes. The source file can be compiled with -c to produce a .o for analysis. Both functions are compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out.",
+      "expected_output": "A full preflight report with Call graph, Latency, Energy, and Execution fit — produced from analysis of the compiled artifact. The skill should use the .o or binary to extract assembly and report timing/energy via the LOCI MCP.",
       "files": [],
       "assertions": [
         {
-          "text": "Preflight resources section shows OK, not a risk",
-          "description": "A stack-local variable with automatic lifetime has no resource hazard — the skill must not flag stack variables as resource risks"
+          "text": "Response includes a preflight report with Call graph, Latency, Energy, and Execution fit lines",
+          "description": "Partial compilation or existing binary must produce a full preflight report"
+        },
+        {
+          "text": "Preflight reports energy values in uWs",
+          "description": "Energy must be reported from the LOCI MCP for the analyzed callees"
         }
       ]
     },
@@ -103,16 +107,16 @@
       "id": "pf-scenario-7",
       "should_trigger": true,
       "category": "execution-fit-GOOD",
-      "prompt": "Add a static uint32_t hciTxBytes counter inside HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c that accumulates the dataLen parameter on each successful send. dataLen is already validated by the caller as a uint8_t bounded to 0–251 by the BLE spec, and the counter wraps silently.",
-      "expected_output": "All three checks OK: no new callees (call graph OK), bounded uint8_t addition to a uint32_t with intentional wrap (arithmetic OK), stack-local accumulation with no heap (resources OK). Execution fit must be GOOD.",
+      "prompt": "Add a static uint32_t hciTxBytes counter inside HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c that accumulates the dataLen parameter on each successful send. dataLen is already validated by the caller as a uint8_t bounded to 0–251 by the BLE spec, and the counter wraps silently. HCI_SendDataPkt is compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out.",
+      "expected_output": "All checks OK: no new callees (call graph OK), no timing concern (latency OK), negligible energy (energy OK). Execution fit must be GOOD.",
       "files": [],
       "assertions": [
         {
           "text": "Preflight Execution fit is GOOD",
-          "description": "No call graph risk, no arithmetic risk, no resource risk — execution fit must be GOOD, not ADJUST PLAN"
+          "description": "No call graph risk, no latency risk, no energy risk — execution fit must be GOOD, not ADJUST PLAN"
         },
         {
-          "text": "Preflight call graph, arithmetic, and resources lines all show OK",
+          "text": "Preflight call graph, latency, and energy lines all show OK",
           "description": "The skill must confirm each check is clean and not invent issues for a simple accumulator"
         }
       ]
@@ -121,21 +125,21 @@
       "id": "pf-scenario-8",
       "should_trigger": true,
       "category": "execution-fit-ADJUST-PLAN",
-      "prompt": "Add a bond validation step inside HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c: (1) allocate a lookup buffer with osal_msg_allocate to hold the bond query result, (2) call GAPBondMgr_FindAddr to check bond status, and (3) free the buffer if the peer is not bonded and return HCI_ERROR_CODE_CONN_TERM_BY_LOCAL_HOST. HCI_SendDataPkt must complete within 10μs at 48 MHz.",
-      "expected_output": "Multiple risks across all three checks: call graph RISK (GAPBondMgr_FindAddr violates 10μs timing budget), arithmetic — no specific range risk from this combination, resources RISK (lookup buffer is not freed on the success path — only freed on not-bonded path). Execution fit ADJUST PLAN or STOP.",
+      "prompt": "Add a bond validation step inside HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c: call GAPBondMgr_FindAddr to check bond status before sending. HCI_SendDataPkt must complete within 10μs at 48 MHz. Both functions are compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out.",
+      "expected_output": "Call graph RISK: GAPBondMgr_FindAddr violates the 10μs timing budget due to NV reads. Energy should also be reported. Execution fit ADJUST PLAN or STOP.",
       "files": [],
       "assertions": [
         {
           "text": "Preflight Execution fit is ADJUST PLAN or STOP",
-          "description": "At least two checks have risks — execution fit cannot be GOOD"
+          "description": "A timing violation on the hot path cannot be GOOD"
         },
         {
-          "text": "Preflight call graph section flags a timing or latency risk from GAPBondMgr_FindAddr on the 10μs budget",
+          "text": "Preflight call graph or latency section flags a timing or latency risk from GAPBondMgr_FindAddr on the 10μs budget",
           "description": "Call graph risk from adding an NV-reading callee on a timing-critical path"
         },
         {
-          "text": "Preflight resources section flags a resource leak — the lookup buffer is not freed on the path where the peer is bonded",
-          "description": "RAII gap: buffer allocated before the bond check is only freed on one of the two exit paths"
+          "text": "Preflight reports energy values for GAPBondMgr_FindAddr",
+          "description": "Energy must be reported alongside timing for the analyzed callee"
         }
       ]
     }

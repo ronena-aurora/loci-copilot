@@ -44,7 +44,7 @@
       "should_trigger": true,
       "category": "implement-keyword",
       "prompt": "Implement a retry loop inside HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c that retries up to 3 times if the connection handle is invalid before returning an error.",
-      "expected_output": "A preflight report covering call graph ordering, arithmetic ranges (loop counter, retry count), and resource access — followed by the implementation plan.",
+      "expected_output": "A preflight report covering call graph ordering and timing/energy — followed by the implementation plan.",
       "files": [],
       "assertions": [
         {
@@ -76,7 +76,7 @@
       "should_trigger": true,
       "category": "add-method",
       "prompt": "Add a method to GAPBondMgr_FindAddr in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c that also returns the bond index as an output parameter alongside the existing return value.",
-      "expected_output": "A preflight report covering the signature change, call graph impact on existing callers, and any arithmetic/resource concerns.",
+      "expected_output": "A preflight report covering the signature change, call graph impact on existing callers, and timing/energy analysis.",
       "files": [],
       "assertions": [
         {
@@ -90,16 +90,12 @@
       "should_trigger": true,
       "category": "plan-new-logic",
       "prompt": "/plan Add exponential backoff to the connection parameter update retry logic in $LOCI_TEST_BLE_ROOT/examples/rtos/LP_EM_CC2340R53/ble5stack/basic_ble_profiles/app/app_connection.c. Each retry should double the wait interval up to a cap of 10 seconds.",
-      "expected_output": "A preflight report (especially arithmetic: overflow risk on doubling intervals) followed by plan steps.",
+      "expected_output": "A preflight report covering call graph and timing/energy analysis followed by plan steps.",
       "files": [],
       "assertions": [
         {
           "text": "Response includes a preflight report section",
-          "description": "/plan + new arithmetic logic (exponential doubling) must trigger preflight"
-        },
-        {
-          "text": "Preflight includes an arithmetic check",
-          "description": "Doubling a value up to a cap is a classic overflow/range risk"
+          "description": "/plan + new logic must trigger preflight"
         }
       ]
     },
@@ -108,7 +104,7 @@
       "should_trigger": true,
       "category": "thinking-mode",
       "prompt": "Think through how to add a watchdog reset inside OAD_processQueue in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/profiles/oad/cc26xx/oad.c if the queue has been stalled for more than 30 seconds.",
-      "expected_output": "A preflight report covering call graph (watchdog API call from within OAD queue processing), resource concerns, and arithmetic (timer overflow) — then the approach.",
+      "expected_output": "A preflight report covering call graph (watchdog API call from within OAD queue processing) and timing/energy — then the approach.",
       "files": [],
       "assertions": [
         {
@@ -170,46 +166,42 @@
         {
           "text": "Response includes a preflight report section",
           "description": "/plan + 'write a function' is an explicit write-intent trigger"
-        },
-        {
-          "text": "Preflight includes an arithmetic check",
-          "description": "Handle range validation involves arithmetic bounds — skill should flag or clear it"
         }
       ]
     },
     {
       "id": "pf-simple-12",
       "should_trigger": true,
-      "category": "plan-fix-bug",
-      "prompt": "/plan Fix the unsigned subtraction wrap in osal_mem_free in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/osal/src/common/osal_memory.c when block size underflows — if the block header size exceeds the reported size the computed free size wraps to a huge number.",
-      "expected_output": "A preflight report (arithmetic: unsigned wraparound is the core risk) followed by the fix plan.",
+      "category": "energy-reporting",
+      "prompt": "/plan Add a call to GAPBondMgr_FindAddr at the top of HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c to verify the peer is bonded before sending data. Both functions are compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out. Report the energy cost of adding this callee.",
+      "expected_output": "A preflight report that includes per-callee energy values in uWs from the LOCI MCP and a hot-path energy total.",
       "files": [],
       "assertions": [
         {
           "text": "Response includes a preflight report section",
-          "description": "/plan + bug fix involving arithmetic must trigger preflight"
+          "description": "/plan + adding a callee must trigger preflight"
         },
         {
-          "text": "Preflight includes an arithmetic check flagging the unsigned wraparound risk",
-          "description": "The whole point of the fix is a size_t/unsigned subtraction hazard — skill must surface it"
+          "text": "Preflight includes an Energy: line reporting energy in uWs",
+          "description": "Energy must be reported for callee analysis per SKILL.md"
         }
       ]
     },
     {
       "id": "pf-simple-13",
       "should_trigger": true,
-      "category": "freed-resource-error-path",
-      "prompt": "Refactor OAD_open in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/profiles/oad/cc26xx/oad.c to free oadCCCDTable and call mq_close on hOadQ before returning early if GATTServApp_RegisterService fails — right now both resources leak on that error path.",
-      "expected_output": "A preflight report where the Resources check maps the ownership of oadCCCDTable and hOadQ across all exit paths, flags whether the new cleanup creates a double-free risk if OAD_open is called again, and confirms every error path releases both resources exactly once.",
+      "category": "hard-stop-no-compilation",
+      "prompt": "Implement a retry loop inside a function in /tmp/nonexistent-project/src/main.c that retries up to 3 times. There is no compiler configured and no build system detected for this project.",
+      "expected_output": "A preflight STOPPED block stating that no compiled artifact is available and compilation is not possible. The skill must NOT produce Call graph, Latency, Energy, or Execution fit lines.",
       "files": [],
       "assertions": [
         {
-          "text": "Response includes a preflight report section",
-          "description": "Refactoring resource cleanup paths requires preflight"
+          "text": "Response includes 'Preflight: STOPPED' or 'STOPPED' indicating the skill cannot proceed",
+          "description": "No compiler and no binary means preflight must hard stop"
         },
         {
-          "text": "Preflight Resources check flags freed-resource or resource-lifetime concern — whether every exit path releases oadCCCDTable and hOadQ, or whether the cleanup introduces a double-free risk",
-          "description": "This is the primary freed-resource access scenario — the skill must reason about ownership across all control-flow paths"
+          "text": "Response does NOT contain a 'Call graph:' line or 'Execution fit: GOOD' line",
+          "description": "Preflight must not produce analysis output when compilation is not possible"
         }
       ]
     },

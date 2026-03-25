@@ -9,7 +9,7 @@
       "category": "invoke-implement-clockp-construct",
       "grading_mode": "bash",
       "prompt": "Implement a guard in ClockP_construct in $LOCI_TEST_BLE_ROOT/kernel/freertos/dpl/ClockP_freertos.c so it returns NULL immediately if clockFxn is NULL, before any timer setup occurs.",
-      "expected_output": "A preflight block appears before any implementation plan or code and includes all required sections: Call graph, Latency, Arithmetic, Resources, and Execution fit.",
+      "expected_output": "A preflight block appears before any implementation plan or code and includes all required sections: Call graph, Latency, Energy, and Execution fit.",
       "files": [],
       "assertions": [
         {
@@ -25,11 +25,7 @@
           "description": "Required preflight section"
         },
         {
-          "text": "Preflight block contains an 'Arithmetic:' line",
-          "description": "Required preflight section"
-        },
-        {
-          "text": "Preflight block contains a 'Resources:' line",
+          "text": "Preflight block contains an 'Energy:' line",
           "description": "Required preflight section"
         },
         {
@@ -60,11 +56,7 @@
           "description": "Required preflight section"
         },
         {
-          "text": "Preflight block contains an 'Arithmetic:' line",
-          "description": "Required preflight section"
-        },
-        {
-          "text": "Preflight block contains a 'Resources:' line",
+          "text": "Preflight block contains an 'Energy:' line",
           "description": "Required preflight section"
         },
         {
@@ -95,11 +87,7 @@
           "description": "Required preflight section"
         },
         {
-          "text": "Preflight block contains an 'Arithmetic:' line",
-          "description": "Required preflight section"
-        },
-        {
-          "text": "Preflight block contains a 'Resources:' line",
+          "text": "Preflight block contains an 'Energy:' line",
           "description": "Required preflight section"
         },
         {

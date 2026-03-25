@@ -1,6 +1,6 @@
 {
   "skill_name": "loci-preflight",
-  "description": "Tests that the plugin is correctly invoked (or correctly silent) and that every output always contains all four sections SKILL.md requires: Call graph, Arithmetic, Resources, Execution fit. Uses functions compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out.",
+  "description": "Tests that the plugin is correctly invoked (or correctly silent) and that every output always contains all required sections: Call graph, Latency, Energy, Execution fit. Uses functions compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out.",
   "note": "Set $LOCI_TEST_BLE_ROOT to your local BLE project root before running.",
   "evals": [
     {
@@ -8,7 +8,7 @@
       "should_trigger": true,
       "category": "invoke-implement-all-fields",
       "prompt": "Implement a retry loop inside HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c that retries up to 3 times if the connection handle is invalid before returning an error.",
-      "expected_output": "A preflight block with all four lines — Call graph, Arithmetic, Resources, Execution fit — before any code or edit steps.",
+      "expected_output": "A preflight block with all required lines — Call graph, Latency, Energy, Execution fit — before any code or edit steps.",
       "files": [],
       "assertions": [
         {
@@ -17,15 +17,15 @@
         },
         {
           "text": "Preflight block contains a 'Call graph:' line",
-          "description": "All four checks must be present"
+          "description": "All required checks must be present"
         },
         {
-          "text": "Preflight block contains an 'Arithmetic:' line",
-          "description": "All four checks must be present"
+          "text": "Preflight block contains a 'Latency:' line",
+          "description": "All required checks must be present"
         },
         {
-          "text": "Preflight block contains a 'Resources:' line",
-          "description": "All four checks must be present"
+          "text": "Preflight block contains an 'Energy:' line",
+          "description": "All required checks must be present"
         },
         {
           "text": "Preflight block contains an 'Execution fit:' line with value GOOD, ADJUST PLAN, or STOP",
@@ -38,7 +38,7 @@
       "should_trigger": true,
       "category": "invoke-add-method-all-fields",
       "prompt": "Add a method to GAPBondMgr_FindAddr in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c that also returns the bond index as an output parameter alongside the existing return value.",
-      "expected_output": "A preflight block with all four lines before the implementation plan.",
+      "expected_output": "A preflight block with all required lines before the implementation plan.",
       "files": [],
       "assertions": [
         {
@@ -47,15 +47,15 @@
         },
         {
           "text": "Preflight block contains a 'Call graph:' line",
-          "description": "All three checks must be present"
+          "description": "All required checks must be present"
         },
         {
-          "text": "Preflight block contains an 'Arithmetic:' line",
-          "description": "All three checks must be present"
+          "text": "Preflight block contains a 'Latency:' line",
+          "description": "All required checks must be present"
         },
         {
-          "text": "Preflight block contains a 'Resources:' line",
-          "description": "All three checks must be present"
+          "text": "Preflight block contains an 'Energy:' line",
+          "description": "All required checks must be present"
         },
         {
           "text": "Preflight block contains an 'Execution fit:' line with value GOOD, ADJUST PLAN, or STOP",
@@ -68,7 +68,7 @@
       "should_trigger": true,
       "category": "invoke-modify-all-fields",
       "prompt": "How should I modify osal_set_event in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/osal/src/common/osal.c to also log the event to a ring buffer before posting, so we can replay events in the debugger?",
-      "expected_output": "A preflight block with all four lines before the plan.",
+      "expected_output": "A preflight block with all required lines before the plan.",
       "files": [],
       "assertions": [
         {
@@ -77,15 +77,15 @@
         },
         {
           "text": "Preflight block contains a 'Call graph:' line",
-          "description": "All three checks must be present"
+          "description": "All required checks must be present"
         },
         {
-          "text": "Preflight block contains an 'Arithmetic:' line",
-          "description": "All three checks must be present"
+          "text": "Preflight block contains a 'Latency:' line",
+          "description": "All required checks must be present"
         },
         {
-          "text": "Preflight block contains a 'Resources:' line",
-          "description": "All three checks must be present"
+          "text": "Preflight block contains an 'Energy:' line",
+          "description": "All required checks must be present"
         },
         {
           "text": "Preflight block contains an 'Execution fit:' line with value GOOD, ADJUST PLAN, or STOP",
@@ -98,7 +98,7 @@
       "should_trigger": true,
       "category": "invoke-plan-all-fields",
       "prompt": "/plan Add a per-connection packet counter inside HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c that increments a uint32_t in the connection record on every successful send.",
-      "expected_output": "A preflight block with all four lines as part of the plan, before the edit steps.",
+      "expected_output": "A preflight block with all required lines as part of the plan, before the edit steps.",
       "files": [],
       "assertions": [
         {
@@ -107,15 +107,15 @@
         },
         {
           "text": "Preflight block contains a 'Call graph:' line",
-          "description": "All three checks must be present"
+          "description": "All required checks must be present"
         },
         {
-          "text": "Preflight block contains an 'Arithmetic:' line",
-          "description": "All three checks must be present"
+          "text": "Preflight block contains a 'Latency:' line",
+          "description": "All required checks must be present"
         },
         {
-          "text": "Preflight block contains a 'Resources:' line",
-          "description": "All three checks must be present"
+          "text": "Preflight block contains an 'Energy:' line",
+          "description": "All required checks must be present"
         },
         {
           "text": "Preflight block contains an 'Execution fit:' line with value GOOD, ADJUST PLAN, or STOP",
@@ -128,7 +128,7 @@
       "should_trigger": true,
       "category": "invoke-thinking-mode-all-fields",
       "prompt": "Think through how to add a watchdog reset inside GAPBondMgr_ProcessEvent in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c if the bond manager has been stuck processing the same event for more than 5 seconds.",
-      "expected_output": "A preflight block with all four lines before the design discussion.",
+      "expected_output": "A preflight block with all required lines before the design discussion.",
       "files": [],
       "assertions": [
         {
@@ -137,15 +137,15 @@
         },
         {
           "text": "Preflight block contains a 'Call graph:' line",
-          "description": "All three checks must be present"
+          "description": "All required checks must be present"
         },
         {
-          "text": "Preflight block contains an 'Arithmetic:' line",
-          "description": "All three checks must be present"
+          "text": "Preflight block contains a 'Latency:' line",
+          "description": "All required checks must be present"
         },
         {
-          "text": "Preflight block contains a 'Resources:' line",
-          "description": "All three checks must be present"
+          "text": "Preflight block contains an 'Energy:' line",
+          "description": "All required checks must be present"
         },
         {
           "text": "Preflight block contains an 'Execution fit:' line with value GOOD, ADJUST PLAN, or STOP",
@@ -162,7 +162,7 @@
       "files": [],
       "assertions": [
         {
-          "text": "Response does NOT contain a '## Preflight:' header or 'Call graph:' line",
+          "text": "Response does NOT contain a '## Preflight:' header or 'Call graph:' or 'Energy:' line",
           "description": "Explain is read-only — skill must stay silent"
         }
       ]
@@ -176,7 +176,7 @@
       "files": [],
       "assertions": [
         {
-          "text": "Response does NOT contain a '## Preflight:' header or 'Call graph:' line",
+          "text": "Response does NOT contain a '## Preflight:' header or 'Call graph:' or 'Energy:' line",
           "description": "Read-only with explicit 'before I make changes' — skill must stay silent"
         }
       ]
@@ -190,7 +190,7 @@
       "files": [],
       "assertions": [
         {
-          "text": "Response does NOT contain a '## Preflight:' header or 'Call graph:' line",
+          "text": "Response does NOT contain a '## Preflight:' header or 'Call graph:' or 'Energy:' line",
           "description": "'don't change anything yet' is explicit analysis mode — preflight is premature"
         }
       ]
