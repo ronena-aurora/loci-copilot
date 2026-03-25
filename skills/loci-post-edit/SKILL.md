@@ -6,8 +6,7 @@ description: >
   consumption, and control-flow analysis for all modified/added functions.
   Invoke when the user says "analyze the change", "measure the edit",
   "post-edit", "compare before/after", "timing diff", or any time the user
-  wants execution-level feedback on a code change. No safety checks — those
-  stay in loci-preflight.
+  wants execution-level feedback on a code change. 
 ---
 
 # loci-post-edit
