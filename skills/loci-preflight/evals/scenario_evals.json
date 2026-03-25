@@ -2,11 +2,9 @@
   "skill_name": "loci-preflight",
   "description": "Eight paired positive/negative scenarios — one with risk and one without — for each of the three checks (call graph, arithmetic, resources) plus execution fit. Every prompt uses a function compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out so asm-analyze can run on the real binary. The point is to verify the skill correctly distinguishes risk from no-risk for each parameter.",
   "note": "Set $LOCI_TEST_BLE_ROOT to your local BLE project root before running.",
-
   "evals": [
-
     {
-      "id": 1,
+      "id": "pf-scenario-1",
       "should_trigger": true,
       "category": "call-graph-RISK",
       "prompt": "Add a call to osal_msg_allocate at the top of osal_set_event in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/osal/src/common/osal.c to pre-allocate a log entry for the event before posting it. osal_set_event is called from interrupt context on the BLE stack and must return in under 5μs at 48 MHz.",
@@ -23,9 +21,8 @@
         }
       ]
     },
-
     {
-      "id": 2,
+      "id": "pf-scenario-2",
       "should_trigger": true,
       "category": "call-graph-OK",
       "prompt": "Add a single-instruction guard at the top of osal_set_event in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/osal/src/common/osal.c that returns immediately if a global uint8_t osalShutdownFlag is non-zero. No new function calls, no allocation — just a load and branch.",
@@ -38,9 +35,8 @@
         }
       ]
     },
-
     {
-      "id": 3,
+      "id": "pf-scenario-3",
       "should_trigger": true,
       "category": "arithmetic-RISK",
       "prompt": "Add a per-task bitmask check inside osal_set_event in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/osal/src/common/osal.c — before posting, compute allowedMask = (1U << taskID) and skip if the corresponding bit in a global uint32_t osalAllowedTasks is clear. taskID is the uint8_t parameter passed into osal_set_event and is not range-checked before this point.",
@@ -57,9 +53,8 @@
         }
       ]
     },
-
     {
-      "id": 4,
+      "id": "pf-scenario-4",
       "should_trigger": true,
       "category": "arithmetic-OK",
       "prompt": "Add a success counter inside HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c that increments a static uint32_t hciSentPktCount by 1 each time the function returns success. The counter wraps silently when it reaches UINT32_MAX.",
@@ -72,9 +67,8 @@
         }
       ]
     },
-
     {
-      "id": 5,
+      "id": "pf-scenario-5",
       "should_trigger": true,
       "category": "resources-RISK",
       "prompt": "Refactor GAPBondMgr_Init in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c to allocate a bond shadow table at startup: pShadow = osal_mem_alloc(numBonds * sizeof(gattCharCfg_t)). After the allocation, call GAPBondMgr_Register to register the GATT service. If GAPBondMgr_Register fails, return FAILURE immediately without freeing pShadow.",
@@ -91,9 +85,8 @@
         }
       ]
     },
-
     {
-      "id": 6,
+      "id": "pf-scenario-6",
       "should_trigger": true,
       "category": "resources-OK",
       "prompt": "Add a uint32_t local variable eventTimestamp inside osal_set_event in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/osal/src/common/osal.c that captures the current tick count at entry using Clock_getTicks() and is used only within the function to compute elapsed time. No heap allocation, no pointers stored outside the stack frame.",
@@ -106,9 +99,8 @@
         }
       ]
     },
-
     {
-      "id": 7,
+      "id": "pf-scenario-7",
       "should_trigger": true,
       "category": "execution-fit-GOOD",
       "prompt": "Add a static uint32_t hciTxBytes counter inside HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c that accumulates the dataLen parameter on each successful send. dataLen is already validated by the caller as a uint8_t bounded to 0–251 by the BLE spec, and the counter wraps silently.",
@@ -125,9 +117,8 @@
         }
       ]
     },
-
     {
-      "id": 8,
+      "id": "pf-scenario-8",
       "should_trigger": true,
       "category": "execution-fit-ADJUST-PLAN",
       "prompt": "Add a bond validation step inside HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c: (1) allocate a lookup buffer with osal_msg_allocate to hold the bond query result, (2) call GAPBondMgr_FindAddr to check bond status, and (3) free the buffer if the peer is not bonded and return HCI_ERROR_CODE_CONN_TERM_BY_LOCAL_HOST. HCI_SendDataPkt must complete within 10μs at 48 MHz.",
@@ -148,6 +139,5 @@
         }
       ]
     }
-
   ]
 }

@@ -4,7 +4,7 @@ description: >
   Pre-execution safety thinking: before writing or editing any function, run
   control-flow analysis on existing callees, check arithmetic ranges, and
   verify freed-resource access to see the execution fit before touching the
-  code. Run this during planning — not at write time. Invoke when the user says
+  code. Run this during planning — not at write time. Invoke when in plan mode and the user says
   "write a function that...", "implement...", "add a method for...", "how should
   I...", or any time you are about to form a plan that involves writing new
   logic. Also invoke during /plan or thinking mode. Do not wait until you are at

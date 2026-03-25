@@ -1,0 +1,157 @@
+{
+  "skill_name": "loci-preflight",
+  "description": "Critical smoke tests for loci-preflight. Validates only invoke / no-invoke behavior and required preflight structure. Designed for cheap, deterministic grading.",
+  "note": "Set $LOCI_TEST_BLE_ROOT to your local BLE project root before running.",
+  "evals": [
+    {
+      "id": "pf-critical-1",
+      "should_trigger": true,
+      "category": "invoke-implement-clockp-construct",
+      "grading_mode": "bash",
+      "prompt": "Implement a guard in ClockP_construct in $LOCI_TEST_BLE_ROOT/kernel/freertos/dpl/ClockP_freertos.c so it returns NULL immediately if clockFxn is NULL, before any timer setup occurs.",
+      "expected_output": "A preflight block appears before any implementation plan or code and includes all required sections: Call graph, Latency, Arithmetic, Resources, and Execution fit.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Response includes a '## Preflight:' section header",
+          "description": "'Implement' must trigger the skill"
+        },
+        {
+          "text": "Preflight block contains a 'Call graph:' line",
+          "description": "Required preflight section"
+        },
+        {
+          "text": "Preflight block contains a 'Latency:' line",
+          "description": "Required preflight section"
+        },
+        {
+          "text": "Preflight block contains an 'Arithmetic:' line",
+          "description": "Required preflight section"
+        },
+        {
+          "text": "Preflight block contains a 'Resources:' line",
+          "description": "Required preflight section"
+        },
+        {
+          "text": "Preflight block contains an 'Execution fit:' line with value GOOD, ADJUST PLAN, or STOP",
+          "description": "Execution fit must be present and use an allowed value"
+        }
+      ]
+    },
+    {
+      "id": "pf-critical-2",
+      "should_trigger": true,
+      "category": "invoke-modify-clockp-stop",
+      "grading_mode": "bash",
+      "prompt": "How should I modify ClockP_stop in $LOCI_TEST_BLE_ROOT/kernel/freertos/dpl/ClockP_freertos.c so it returns immediately without calling the FreeRTOS timer API if the clock was never started?",
+      "expected_output": "A preflight block with all required sections appears before the modification plan.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Response includes a '## Preflight:' section header",
+          "description": "'How should I modify' must trigger the skill"
+        },
+        {
+          "text": "Preflight block contains a 'Call graph:' line",
+          "description": "Required preflight section"
+        },
+        {
+          "text": "Preflight block contains a 'Latency:' line",
+          "description": "Required preflight section"
+        },
+        {
+          "text": "Preflight block contains an 'Arithmetic:' line",
+          "description": "Required preflight section"
+        },
+        {
+          "text": "Preflight block contains a 'Resources:' line",
+          "description": "Required preflight section"
+        },
+        {
+          "text": "Preflight block contains an 'Execution fit:' line with value GOOD, ADJUST PLAN, or STOP",
+          "description": "Execution fit must be present and use an allowed value"
+        }
+      ]
+    },
+    {
+      "id": "pf-critical-3",
+      "should_trigger": true,
+      "category": "invoke-plan-existing-hci-senddatapkt",
+      "grading_mode": "bash",
+      "prompt": "/plan Add a per-connection packet counter inside HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c that increments a uint32_t in the connection record on every successful send.",
+      "expected_output": "A preflight block with all required sections appears as part of the plan, before any edit steps or code.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Response includes a '## Preflight:' section header",
+          "description": "/plan must trigger the skill"
+        },
+        {
+          "text": "Preflight block contains a 'Call graph:' line",
+          "description": "Required preflight section"
+        },
+        {
+          "text": "Preflight block contains a 'Latency:' line",
+          "description": "Required preflight section"
+        },
+        {
+          "text": "Preflight block contains an 'Arithmetic:' line",
+          "description": "Required preflight section"
+        },
+        {
+          "text": "Preflight block contains a 'Resources:' line",
+          "description": "Required preflight section"
+        },
+        {
+          "text": "Preflight block contains an 'Execution fit:' line with value GOOD, ADJUST PLAN, or STOP",
+          "description": "Execution fit must be present and use an allowed value"
+        }
+      ]
+    },
+    {
+      "id": "pf-critical-4",
+      "should_trigger": false,
+      "category": "no-invoke-explain-clockp-start",
+      "grading_mode": "bash",
+      "prompt": "Explain what ClockP_start does in $LOCI_TEST_BLE_ROOT/kernel/freertos/dpl/ClockP_freertos.c and when the timer becomes active. Do not propose changes.",
+      "expected_output": "A plain explanation with no preflight block.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Response does NOT contain a '## Preflight:' header or 'Call graph:' line",
+          "description": "Explain-only request must not trigger the skill"
+        }
+      ]
+    },
+    {
+      "id": "pf-critical-5",
+      "should_trigger": false,
+      "category": "no-invoke-existing-explain-gapbondmgr-init",
+      "grading_mode": "bash",
+      "prompt": "Explain what GAPBondMgr_Init does in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c and what each parameter controls.",
+      "expected_output": "A plain explanation with no preflight block.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Response does NOT contain a '## Preflight:' header or 'Call graph:' line",
+          "description": "Explain is read-only — skill must stay silent"
+        }
+      ]
+    },
+    {
+      "id": "pf-critical-6",
+      "should_trigger": false,
+      "category": "no-invoke-existing-review-no-change",
+      "grading_mode": "bash",
+      "prompt": "Review HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c for potential issues. Don't change anything yet — just tell me what you find.",
+      "expected_output": "A code review with observations and no preflight block.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Response does NOT contain a '## Preflight:' header or 'Call graph:' line",
+          "description": "'Don't change anything yet' is explicit analysis mode — skill must stay silent"
+        }
+      ]
+    }
+  ]
+}
