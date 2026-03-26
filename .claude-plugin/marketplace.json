@@ -12,6 +12,7 @@
   "plugins": [
     {
       "name": "loci-plugin",
+      "version": "0.1.0",
       "description": "Context Aware for your coding agent.",
       "source": "./",
       "strict": false,
