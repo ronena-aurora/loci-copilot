@@ -182,6 +182,58 @@ diff_pct = ((post_value - pre_value) / pre_value) * 100
 If the MCP is unavailable, skip timing/energy and note
 "(timing/energy unavailable — MCP not connected)".
 
+### Reason over results
+
+After receiving LOCI results, reason through the following before proceeding
+to CFG analysis or output. This is a mandatory thinking step — do not skip it
+when results look clean. Increment **R** (reasoning cycle counter) by 1 now.
+
+**Interpretation questions:**
+- What is this function's role in the system — is it on a hot path, ISR,
+  periodic task, or called once? This determines whether any timing delta
+  is critical, advisory, or irrelevant.
+- What are the downstream consequences if this function's timing increases —
+  missed deadline, reduced throughput, battery drain, or none?
+- Are these numbers expected for this function's context, or surprising?
+- Does std_dev indicate a stable path or high hardware variance — and why
+  (cache sensitivity, branch misprediction, pipeline stalls visible in CFG)?
+- Does the hot-path total fit — is it tight or loose relative to the
+  function's execution context?
+- If `.o.prev` exists: is the timing drift caused by a meaningful change or
+  noise? Is it real or within measurement uncertainty (compare delta vs std_dev)?
+- What does the CFG structure explain about the timing — which blocks
+  dominate, are there expensive paths the new code will always hit?
+- Is the hot-path energy distribution balanced across callees, or does one
+  callee dominate? If dominated, that callee is the leverage point — plan
+  to cache its result, call it less frequently, or substitute a lighter alternative.
+
+
+**Escalation triggers (run skill inline, then reason over its results):**
+
+*Escalate to `stack-depth`* when:
+- Execution context is ISR, HWI, or interrupt callback, AND call chain
+  depth > 3 levels visible in CFG, OR
+- Recursion already flagged in CFG analysis above.
+
+After stack-depth returns, reason over its results — increment R by 1:
+- Does worst-case stack depth fit the HWI/ISR stack budget?
+- Does any frame in the chain add cost the plan can eliminate?
+- Does the plan need to restructure to reduce depth?
+→ adjust plan based on conclusion before proceeding.
+
+*Escalate to `memory-report`* when:
+- The plan introduces significant new static allocations (large buffers,
+  global arrays, static structs) visible from reading the source, OR
+- `.o.prev` exists and the plan grows or restructures existing data sections.
+
+After memory-report returns, reason over its results — increment R by 1:
+- Does the new allocation fit within available ROM/RAM headroom?
+  (answerable only if map file was provided — memory_regions shows usage %;
+  without map file, report section size delta only)
+- Which region is under most pressure after the change?
+- Does the plan need to reduce static footprint before proceeding?
+→ adjust plan based on conclusion before proceeding.
+
 ### Analyze the CFG output
 
 Check the CFG output for call-ordering hazards:
@@ -270,9 +322,14 @@ If no functions were processed (MCP unavailable or no callees to measure), do NO
 
 ```
 ─── LOCI · preflight ───────────────────
-  <N> functions · <M> MCP calls for execution behavior
+  <N> functions · <M> MCP calls · <R> reasoning cycles
+  escalated: <skills>                  ← omit line if no escalation
 ────────────────────────────────────────
 ```
 
 - **N** = unique callee functions whose assembly was sent to LOCI
 - **M** = MCP calls to `mcp__loci-plugin__get_assembly_block_exec_behavior` (exec-behaviors)
+- **R** = reasoning cycles: 1 for the initial LOCI result pass, +1 for each
+  escalated skill (stack-depth, memory-report) whose results were reasoned over
+- **escalated** = space-separated list of skills called (e.g. `stack-depth · memory-report`);
+  omit the line entirely if no escalation occurred
