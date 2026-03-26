@@ -1,9 +1,0 @@
-{
-  "eval_id": 13,
-  "eval_name": "freed-resource-error-path",
-  "prompt": "Refactor OAD_open in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/profiles/oad/cc26xx/oad.c to free oadCCCDTable and call mq_close on hOadQ before returning early if GATTServApp_RegisterService fails — right now both resources leak on that error path.",
-  "assertions": [
-    {"text": "Response includes a preflight report section"},
-    {"text": "Preflight Resources check flags freed-resource or resource-lifetime concern — whether every exit path releases oadCCCDTable and hOadQ, or whether the cleanup introduces a double-free risk"}
-  ]
-}

@@ -1,9 +1,0 @@
-{
-  "eval_id": 6,
-  "eval_name": "plan-new-logic",
-  "prompt": "/plan Add exponential backoff to the connection parameter update retry logic in $LOCI_TEST_BLE_ROOT/examples/rtos/LP_EM_CC2340R53/ble5stack/basic_ble_profiles/app/app_connection.c. Each retry should double the wait interval up to a cap of 10 seconds.",
-  "assertions": [
-    {"text": "Response includes a preflight report section"},
-    {"text": "Preflight includes an arithmetic check"}
-  ]
-}

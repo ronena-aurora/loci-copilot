@@ -1,7 +1,0 @@
-{
-  "eval_id": 8, "eval_name": "gap-explain", "configuration": "with_skill",
-  "expectations": [
-    { "text": "Response does NOT include a '## Preflight:' section", "passed": true, "evidence": "Skill correctly identified this as a pure explanation request; notes 'Preflight was not run' without including any preflight block" }
-  ],
-  "summary": { "passed": 1, "failed": 0, "total": 1, "pass_rate": 1.0 }
-}

@@ -1,8 +1,0 @@
-{
-  "eval_id": 8,
-  "eval_name": "gap-explain",
-  "prompt": "What parameters does GAP_DeviceInit take and what does each one do? I'm trying to understand the initialization flow.",
-  "assertions": [
-    {"text": "Response does NOT include a '## Preflight:' section", "description": "Pure explanation request — no code change intended, skill must stay quiet"}
-  ]
-}

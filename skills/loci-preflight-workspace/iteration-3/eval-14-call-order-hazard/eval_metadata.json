@@ -1,9 +1,0 @@
-{
-  "eval_id": 14,
-  "eval_name": "call-order-hazard",
-  "prompt": "Add a call to GAPBondMgr_FindAddr as the first check inside OAD_open in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/profiles/oad/cc26xx/oad.c — so OAD rejects image transfers from unbonded devices before doing any setup.",
-  "assertions": [
-    {"text": "Response includes a preflight report section"},
-    {"text": "Preflight call graph section flags a call-order or initialization hazard — GAPBondMgr_FindAddr has a dependency on the bond manager being initialized before OAD_open is invoked"}
-  ]
-}

@@ -1,8 +1,0 @@
-{
-  "eval_id": 14,
-  "eval_name": "plan-build-run",
-  "prompt": "/plan Build the basic_ble example for LP_EM_CC2340R53 and show me the compiler warnings.",
-  "assertions": [
-    {"text": "Response does NOT include a '## Preflight:' section", "description": "Build/run operation — no code is being written or modified"}
-  ]
-}

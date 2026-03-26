@@ -1,8 +1,0 @@
-{
-  "eval_id": 7,
-  "eval_name": "thinking-mode",
-  "prompt": "Think through how to add a watchdog reset inside OAD_processQueue in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/profiles/oad/cc26xx/oad.c if the queue has been stalled for more than 30 seconds.",
-  "assertions": [
-    {"text": "Response includes a preflight report section"}
-  ]
-}

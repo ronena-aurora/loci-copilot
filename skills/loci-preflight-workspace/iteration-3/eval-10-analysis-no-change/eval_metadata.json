@@ -1,8 +1,0 @@
-{
-  "eval_id": 10,
-  "eval_name": "analysis-no-change",
-  "prompt": "Review OAD_open in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/profiles/oad/cc26xx/oad.c for potential issues. Don't change anything yet — just tell me what you find.",
-  "assertions": [
-    {"text": "Response does NOT include a '## Preflight:' section"}
-  ]
-}

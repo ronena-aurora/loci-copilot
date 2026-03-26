@@ -1,7 +1,0 @@
-{
-  "eval_id": 8, "eval_name": "gap-explain", "configuration": "without_skill",
-  "expectations": [
-    { "text": "Response does NOT include a '## Preflight:' section", "passed": true, "evidence": "No preflight section — naturally produces a parameter explanation" }
-  ],
-  "summary": { "passed": 1, "failed": 0, "total": 1, "pass_rate": 1.0 }
-}

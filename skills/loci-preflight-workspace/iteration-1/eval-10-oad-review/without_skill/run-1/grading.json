@@ -1,7 +1,0 @@
-{
-  "eval_id": 10, "eval_name": "oad-review", "configuration": "without_skill",
-  "expectations": [
-    { "text": "Response does NOT include a '## Preflight:' section", "passed": true, "evidence": "No preflight section — naturally produces a code review with issues listed" }
-  ],
-  "summary": { "passed": 1, "failed": 0, "total": 1, "pass_rate": 1.0 }
-}

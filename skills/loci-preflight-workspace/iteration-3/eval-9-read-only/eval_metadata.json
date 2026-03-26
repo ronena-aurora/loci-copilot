@@ -1,8 +1,0 @@
-{
-  "eval_id": 9,
-  "eval_name": "read-only",
-  "prompt": "Show me the body of OAD_processQueue in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/profiles/oad/cc26xx/oad.c — I want to understand it before we make changes.",
-  "assertions": [
-    {"text": "Response does NOT include a '## Preflight:' section"}
-  ]
-}

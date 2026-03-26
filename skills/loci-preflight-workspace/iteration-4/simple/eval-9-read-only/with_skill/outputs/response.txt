@@ -1,5 +1,0 @@
-Here is the body of OAD_processQueue from $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/profiles/oad/cc26xx/oad.c:
-
-I cannot access the file directly because $LOCI_TEST_BLE_ROOT is an environment variable that is not set in this session. Please expand the path and share the file, or paste the function body here, and I will walk through it with you.
-
-Once you share the code, I can explain the control flow, data structures, and any patterns worth understanding before you make changes.

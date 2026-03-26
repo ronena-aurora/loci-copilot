@@ -1,8 +1,0 @@
-{
-  "eval_id": 3, "eval_name": "hci-retry", "configuration": "without_skill",
-  "expectations": [
-    { "text": "Response includes a preflight report section", "passed": false, "evidence": "No preflight section; jumps straight to plan with a retry loop description" },
-    { "text": "Preflight report appears before the code or edit steps", "passed": false, "evidence": "No preflight section present" }
-  ],
-  "summary": { "passed": 0, "failed": 2, "total": 2, "pass_rate": 0.0 }
-}

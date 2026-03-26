@@ -1,8 +1,0 @@
-{
-  "eval_id": 4,
-  "eval_name": "modify-keyword",
-  "prompt": "How should I modify Connection_getConnIndex in $LOCI_TEST_BLE_ROOT/examples/rtos/LP_EM_CC2340R53/ble5stack/basic_ble_profiles/app/app_connection.c to return -1 instead of 0 when no connection is found, so callers can distinguish between index 0 and not-found?",
-  "assertions": [
-    {"text": "Response includes a preflight report section"}
-  ]
-}

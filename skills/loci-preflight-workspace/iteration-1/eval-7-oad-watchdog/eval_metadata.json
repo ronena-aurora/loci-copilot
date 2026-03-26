@@ -1,1 +1,0 @@
-{ "eval_id": 7, "eval_name": "oad-watchdog", "prompt": "Think through how to add a watchdog reset inside OAD_processQueue if stalled for more than 30 seconds." }

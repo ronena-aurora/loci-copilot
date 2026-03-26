@@ -1,8 +1,0 @@
-{
-  "eval_id": 3, "eval_name": "hci-retry", "configuration": "with_skill",
-  "expectations": [
-    { "text": "Response includes a preflight report section", "passed": true, "evidence": "Full '## Preflight: HCI_SendDataPkt' block present with Call graph RISK, Arithmetic OK, Resources OK, Execution fit: ADJUST PLAN" },
-    { "text": "Preflight report appears before the code or edit steps", "passed": true, "evidence": "Preflight section precedes all edit steps and code snippets" }
-  ],
-  "summary": { "passed": 2, "failed": 0, "total": 2, "pass_rate": 1.0 }
-}

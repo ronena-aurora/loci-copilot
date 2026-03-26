@@ -1,7 +1,0 @@
-{
-  "eval_id": 9, "eval_name": "caller-search", "configuration": "with_skill",
-  "expectations": [
-    { "text": "Response does NOT include a '## Preflight:' section", "passed": false, "evidence": "Has '## Preflight: OAD_processQueue' at line 194 — overtrigger: /plan prefix overrides the read-only 'I want to understand it before we make changes' intent" }
-  ],
-  "summary": { "passed": 0, "failed": 1, "total": 1, "pass_rate": 0.0 }
-}

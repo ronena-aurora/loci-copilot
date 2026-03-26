@@ -1,7 +1,0 @@
-{
-  "eval_id": 10, "eval_name": "oad-review", "configuration": "with_skill",
-  "expectations": [
-    { "text": "Response does NOT include a '## Preflight:' section", "passed": false, "evidence": "Has full '## Preflight: OAD_open' block with Call graph RISK, Arithmetic RISK, Resources RISK — overtrigger on an explicit 'don't change anything' review request" }
-  ],
-  "summary": { "passed": 0, "failed": 1, "total": 1, "pass_rate": 0.0 }
-}

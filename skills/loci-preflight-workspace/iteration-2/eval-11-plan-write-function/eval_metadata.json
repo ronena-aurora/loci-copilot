@@ -1,9 +1,0 @@
-{
-  "eval_id": 11,
-  "eval_name": "plan-write-function",
-  "prompt": "/plan Write a function that validates a BLE connection handle before passing it to HCI_SendDataPkt — return an error code if the handle is out of range.",
-  "assertions": [
-    {"text": "Response includes a preflight report section", "description": "/plan + 'write a function' is an explicit write-intent trigger"},
-    {"text": "Preflight includes an arithmetic check", "description": "Handle range validation involves arithmetic bounds — skill should flag or clear it"}
-  ]
-}

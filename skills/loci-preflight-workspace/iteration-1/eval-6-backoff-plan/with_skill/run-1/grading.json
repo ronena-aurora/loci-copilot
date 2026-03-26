@@ -1,8 +1,0 @@
-{
-  "eval_id": 6, "eval_name": "backoff-plan", "configuration": "with_skill",
-  "expectations": [
-    { "text": "Response includes a preflight report section", "passed": true, "evidence": "Preflight present: Call graph OK, Arithmetic OK, Resources WARN (use-after-connection-terminate + double-arm clock)" },
-    { "text": "Preflight includes an arithmetic check", "passed": true, "evidence": "Arithmetic: OK — confirmed uint32_t safe for intervals up to 16000ms before cap, no overflow risk" }
-  ],
-  "summary": { "passed": 2, "failed": 0, "total": 2, "pass_rate": 1.0 }
-}

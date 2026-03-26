@@ -1,8 +1,0 @@
-{
-  "eval_id": 8,
-  "eval_name": "read-explain",
-  "prompt": "What parameters does GAP_DeviceInit in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gap.c take and what does each one do? I'm trying to understand the initialization flow.",
-  "assertions": [
-    {"text": "Response does NOT include a '## Preflight:' section"}
-  ]
-}

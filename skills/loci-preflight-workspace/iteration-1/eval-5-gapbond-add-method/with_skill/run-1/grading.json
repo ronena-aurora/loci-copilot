@@ -1,7 +1,0 @@
-{
-  "eval_id": 5, "eval_name": "gapbond-add-method", "configuration": "with_skill",
-  "expectations": [
-    { "text": "Response includes a preflight report section", "passed": true, "evidence": "Full '## Preflight: GAPBondMgr_FindAddrWithIndex' block: Call graph OK, Arithmetic OK, Resources OK, Execution fit: GOOD" }
-  ],
-  "summary": { "passed": 1, "failed": 0, "total": 1, "pass_rate": 1.0 }
-}

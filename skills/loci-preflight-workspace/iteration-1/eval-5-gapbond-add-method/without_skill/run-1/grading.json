@@ -1,7 +1,0 @@
-{
-  "eval_id": 5, "eval_name": "gapbond-add-method", "configuration": "without_skill",
-  "expectations": [
-    { "text": "Response includes a preflight report section", "passed": false, "evidence": "No preflight block; plan goes directly to declaring the new function" }
-  ],
-  "summary": { "passed": 0, "failed": 1, "total": 1, "pass_rate": 0.0 }
-}

@@ -38,41 +38,9 @@
     {
       "id": "pf-scenario-3",
       "should_trigger": true,
-      "category": "energy-RISK",
-      "prompt": "Add a call to GAPBondMgr_FindAddr at the top of HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c to verify the peer is bonded before sending data. This is a battery-powered BLE peripheral where every function call's energy cost matters. Both functions are compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out.",
-      "expected_output": "Energy RISK: GAPBondMgr_FindAddr involves NV storage reads and RPA resolution which have significant energy cost. The preflight must report per-callee energy in uWs and flag the energy concern for a battery-powered device.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Preflight Energy: line shows a warning or reports energy values in uWs",
-          "description": "Adding a heavyweight callee to a hot path on a battery-powered device must surface energy cost"
-        },
-        {
-          "text": "Preflight reports per-callee energy values from the LOCI MCP",
-          "description": "Energy must come from the MCP response, not be guessed"
-        }
-      ]
-    },
-    {
-      "id": "pf-scenario-4",
-      "should_trigger": true,
-      "category": "energy-OK",
-      "prompt": "Add a simple boolean guard inside HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c that returns HCI_ERROR_CODE_CONTROLLER_BUSY if a global flag hciSuspended is set — no new callees, no allocation. HCI_SendDataPkt is compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out.",
-      "expected_output": "Energy OK: no new callees are added, so no additional energy cost. The guard is a trivial load-and-branch with negligible energy impact.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Preflight Energy: line shows OK, not a risk",
-          "description": "A trivial guard with no new callees has no energy concern — the skill must not hallucinate energy issues"
-        }
-      ]
-    },
-    {
-      "id": "pf-scenario-5",
-      "should_trigger": true,
-      "category": "no-compilation-STOP",
-      "prompt": "Implement a packet counter inside a function in /tmp/nonexistent-project/src/radio.c. The project targets a RISC-V RV32IMC core. There is no compiler configured and the architecture is not in the LOCI supported list.",
-      "expected_output": "Preflight STOPPED: architecture not supported. The skill must not produce any analysis output — no Call graph, Latency, Energy, or Execution fit lines.",
+      "category": "resources-RISK",
+      "prompt": "Refactor GAPBondMgr_Init in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c to allocate a bond shadow table at startup: pShadow = osal_mem_alloc(numBonds * sizeof(gattCharCfg_t)). After the allocation, call GAPBondMgr_Register to register the GATT service. If GAPBondMgr_Register fails, return FAILURE immediately without freeing pShadow.",
+      "expected_output": "Resources RISK: pShadow is allocated before GAPBondMgr_Register is called. The early return on failure leaks pShadow — it is never freed on that path. The skill must flag this as a RAII gap and require that pShadow is freed before returning on the error path.",
       "files": [],
       "assertions": [
         {
@@ -86,7 +54,7 @@
       ]
     },
     {
-      "id": "pf-scenario-6",
+      "id": "pf-scenario-4",
       "should_trigger": true,
       "category": "partial-compilation-OK",
       "prompt": "Add a call to osal_set_event inside GAPBondMgr_ProcessEvent in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c to post a notification event after processing bond changes. The source file can be compiled with -c to produce a .o for analysis. Both functions are compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out.",
@@ -104,7 +72,7 @@
       ]
     },
     {
-      "id": "pf-scenario-7",
+      "id": "pf-scenario-5",
       "should_trigger": true,
       "category": "execution-fit-GOOD",
       "prompt": "Add a static uint32_t hciTxBytes counter inside HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c that accumulates the dataLen parameter on each successful send. dataLen is already validated by the caller as a uint8_t bounded to 0–251 by the BLE spec, and the counter wraps silently. HCI_SendDataPkt is compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out.",
@@ -122,7 +90,7 @@
       ]
     },
     {
-      "id": "pf-scenario-8",
+      "id": "pf-scenario-6",
       "should_trigger": true,
       "category": "execution-fit-ADJUST-PLAN",
       "prompt": "Add a bond validation step inside HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c: call GAPBondMgr_FindAddr to check bond status before sending. HCI_SendDataPkt must complete within 10μs at 48 MHz. Both functions are compiled into $LOCI_TEST_BLE_ROOT/CC2340R5/basic_ble.out.",

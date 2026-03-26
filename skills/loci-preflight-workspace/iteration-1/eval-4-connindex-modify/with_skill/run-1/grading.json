@@ -1,7 +1,0 @@
-{
-  "eval_id": 4, "eval_name": "connindex-modify", "configuration": "with_skill",
-  "expectations": [
-    { "text": "Response includes a preflight report section", "passed": true, "evidence": "Full preflight block present; identified two risks: returning -1 from uint16_t is a no-op (critical), and uint8_t call sites truncating 0xFFFF (pre-existing hazard)" }
-  ],
-  "summary": { "passed": 1, "failed": 0, "total": 1, "pass_rate": 1.0 }
-}

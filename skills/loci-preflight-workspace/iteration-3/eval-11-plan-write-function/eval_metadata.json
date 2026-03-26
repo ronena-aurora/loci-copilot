@@ -1,9 +1,0 @@
-{
-  "eval_id": 11,
-  "eval_name": "plan-write-function",
-  "prompt": "/plan Write a function that validates a BLE connection handle before passing it to HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c — return an error code if the handle is out of range.",
-  "assertions": [
-    {"text": "Response includes a preflight report section"},
-    {"text": "Preflight includes an arithmetic check"}
-  ]
-}

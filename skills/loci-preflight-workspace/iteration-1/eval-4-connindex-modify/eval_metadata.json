@@ -1,1 +1,0 @@
-{ "eval_id": 4, "eval_name": "connindex-modify", "prompt": "How should I modify Connection_getConnIndex to return -1 instead of 0 when no connection is found?" }

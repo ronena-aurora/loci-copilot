@@ -1,8 +1,0 @@
-{
-  "eval_id": 5,
-  "eval_name": "add-method",
-  "prompt": "Add a method to GAPBondMgr_FindAddr in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c that also returns the bond index as an output parameter alongside the existing return value.",
-  "assertions": [
-    {"text": "Response includes a preflight report section"}
-  ]
-}

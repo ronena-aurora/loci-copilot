@@ -1,9 +1,0 @@
-{
-  "eval_id": 12,
-  "eval_name": "plan-fix-bug",
-  "prompt": "/plan Fix the unsigned subtraction wrap in osal_mem_free when block size underflows — if the block header size exceeds the reported size the computed free size wraps to a huge number.",
-  "assertions": [
-    {"text": "Response includes a preflight report section", "description": "/plan + bug fix involving arithmetic must trigger preflight"},
-    {"text": "Preflight includes an arithmetic check flagging the unsigned wraparound risk", "description": "The whole point of the fix is a size_t/unsigned subtraction hazard — skill must surface it"}
-  ]
-}

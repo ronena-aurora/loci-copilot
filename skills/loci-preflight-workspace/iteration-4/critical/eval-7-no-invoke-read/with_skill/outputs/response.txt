@@ -1,7 +1,0 @@
-The file you're referencing lives at:
-
-  $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/osal/src/common/osal.c
-
-That path isn't available in the current environment — $LOCI_TEST_BLE_ROOT is not set here, and the SDK tree isn't present under the project root. To read the function body, point me at the actual filesystem path or paste the source directly.
-
-Once you share the source, I can walk through how osal_set_event dispatches events before you make any changes.

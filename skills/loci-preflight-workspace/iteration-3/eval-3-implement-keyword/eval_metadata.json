@@ -1,9 +1,0 @@
-{
-  "eval_id": 3,
-  "eval_name": "implement-keyword",
-  "prompt": "Implement a retry loop inside HCI_SendDataPkt in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/hci/cc26xx/hci.c that retries up to 3 times if the connection handle is invalid before returning an error.",
-  "assertions": [
-    {"text": "Response includes a preflight report (either '## Preflight:' header or 'Preflight HCI_SendDataPkt:' shorthand)"},
-    {"text": "Preflight report appears before the code or edit steps"}
-  ]
-}

@@ -1,8 +1,0 @@
-{
-  "eval_id": 6, "eval_name": "backoff-plan", "configuration": "without_skill",
-  "expectations": [
-    { "text": "Response includes a preflight report section", "passed": false, "evidence": "No preflight block; plan covers implementation steps without structured safety analysis" },
-    { "text": "Preflight includes an arithmetic check", "passed": false, "evidence": "No preflight section present" }
-  ],
-  "summary": { "passed": 0, "failed": 2, "total": 2, "pass_rate": 0.0 }
-}

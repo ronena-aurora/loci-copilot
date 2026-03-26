@@ -1,8 +1,0 @@
-The file referenced in the prompt — $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/profiles/oad/cc26xx/oad.c — does not exist in the current workspace. The environment variable $LOCI_TEST_BLE_ROOT is not set to a path accessible here, and no oad.c file was found anywhere under the working directory /home/melisa/loci-plugin-2.
-
-To show you the body of OAD_processQueue, I would need either:
-
-1. The actual path on your filesystem where the SimpleLink Low Power F3 SDK is installed, or
-2. Access to the file directly (e.g., by setting $LOCI_TEST_BLE_ROOT to the correct location and ensuring the file is accessible).
-
-Could you confirm where the SDK is located on your system?

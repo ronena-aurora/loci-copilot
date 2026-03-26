@@ -1,9 +1,0 @@
-{
-  "eval_id": 6,
-  "eval_name": "backoff-plan",
-  "prompt": "/plan Add exponential backoff to the connection parameter update retry logic in app_connection.c. Each retry should double the wait interval up to a cap of 10 seconds.",
-  "assertions": [
-    {"text": "Response includes a preflight report section", "description": "/plan + new arithmetic logic (exponential doubling) must trigger preflight"},
-    {"text": "Preflight includes an arithmetic check", "description": "Doubling a value up to a cap is a classic overflow/range risk"}
-  ]
-}

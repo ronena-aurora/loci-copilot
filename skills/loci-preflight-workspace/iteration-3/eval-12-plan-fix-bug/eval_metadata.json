@@ -1,9 +1,0 @@
-{
-  "eval_id": 12,
-  "eval_name": "plan-fix-bug",
-  "prompt": "/plan Fix the unsigned subtraction wrap in osal_mem_free in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/osal/src/common/osal_memory.c when block size underflows — if the block header size exceeds the reported size the computed free size wraps to a huge number.",
-  "assertions": [
-    {"text": "Response includes a preflight report section"},
-    {"text": "Preflight includes an arithmetic check flagging the unsigned wraparound risk"}
-  ]
-}

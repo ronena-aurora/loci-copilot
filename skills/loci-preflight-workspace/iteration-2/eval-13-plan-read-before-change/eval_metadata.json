@@ -1,8 +1,0 @@
-{
-  "eval_id": 13,
-  "eval_name": "plan-read-before-change",
-  "prompt": "/plan Show me how GAP_DeviceInit validates its addrMode parameter — I need to understand it before deciding what to change.",
-  "assertions": [
-    {"text": "Response does NOT include a '## Preflight:' section", "description": "/plan + explicit read-only intent ('before deciding what to change') — no new logic being written yet"}
-  ]
-}

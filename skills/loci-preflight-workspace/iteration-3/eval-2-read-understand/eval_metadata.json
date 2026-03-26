@@ -1,8 +1,0 @@
-{
-  "eval_id": 2,
-  "eval_name": "read-understand",
-  "prompt": "Explain what GAPBondMgr_FindAddr does in $LOCI_TEST_BLE_ROOT/simplelink-lowpower-f3-sdk/source/ti/ble5stack_flash/host/gapbondmgr.c and describe what each parameter means.",
-  "assertions": [
-    {"text": "Response does NOT include a '## Preflight:' section or 'Preflight GAPBondMgr_FindAddr:' line"}
-  ]
-}

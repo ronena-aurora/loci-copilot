@@ -311,6 +311,41 @@ grade_bash() {
 }
 
 # ---------------------------------------------------------------------------
+# grade_bash_post_edit — deterministic Bash-based grader for post-edit tests
+#   $1: response text
+#   $2: should_trigger ("true" | "false")
+#   Writes "PASS|reason" or "FAIL|reason" to stdout
+# ---------------------------------------------------------------------------
+grade_bash_post_edit() {
+  local RESPONSE="$1"
+  local SHOULD_TRIGGER="$2"
+
+  if [[ "$SHOULD_TRIGGER" == "true" ]]; then
+    if ! echo "$RESPONSE" | grep -qiE '##[[:space:]]*post-edit'; then
+      echo "FAIL|missing Post-Edit section header"; return
+    fi
+    if ! echo "$RESPONSE" | grep -qiE 'happy[[:space:]]+path[[:space:]]*:'; then
+      echo "FAIL|missing Happy path line"; return
+    fi
+    if ! echo "$RESPONSE" | grep -qiE 'worst[[:space:]]+path[[:space:]]*:'; then
+      echo "FAIL|missing Worst path line"; return
+    fi
+    if ! echo "$RESPONSE" | grep -qiE 'diff|%'; then
+      echo "FAIL|missing Diff column or % diff value"; return
+    fi
+    if ! echo "$RESPONSE" | grep -qiE '###[[:space:]]*control[[:space:]]+flow'; then
+      echo "FAIL|missing Control Flow section"; return
+    fi
+    echo "PASS|all required post-edit sections present"
+  else
+    if echo "$RESPONSE" | grep -qiE '##[[:space:]]*post-edit'; then
+      echo "FAIL|should not have triggered but contains Post-Edit header"; return
+    fi
+    echo "PASS|correctly did not trigger post-edit"
+  fi
+}
+
+# ---------------------------------------------------------------------------
 # run_one_eval — runs a single eval (prompt + grade) and writes result files
 #   Called either inline (sequential) or as a background job (parallel).
 #   All output goes to a log file; the caller prints it.
@@ -497,7 +532,11 @@ run_one_eval() {
   if [[ "$GRADING_MODE" == "bash" ]]; then
     log_eval "Grading (bash — should_trigger=$SHOULD_TRIGGER)"
     local BASH_VERDICT
-    BASH_VERDICT=$(grade_bash "$RESPONSE" "$SHOULD_TRIGGER")
+    if [[ "$SKILL_NAME" == "loci-post-edit" ]]; then
+      BASH_VERDICT=$(grade_bash_post_edit "$RESPONSE" "$SHOULD_TRIGGER")
+    else
+      BASH_VERDICT=$(grade_bash "$RESPONSE" "$SHOULD_TRIGGER")
+    fi
     echo "$BASH_VERDICT" > "$GRADE_FILE"
     VERDICT="${BASH_VERDICT%%|*}"
     REASON="${BASH_VERDICT#*|}"
