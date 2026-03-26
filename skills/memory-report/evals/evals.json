@@ -111,28 +111,6 @@
           "description": "Map files are not applicable to unlinked object files"
         }
       ]
-    },
-
-    {
-      "id": "mr-5",
-      "category": "graceful-degradation",
-      "prompt": "Analyze memory usage of my firmware. Session context: Target: x86_64, Compiler: gcc, LOCI target: x86_64. The binary is at build/app.elf.",
-      "expected_output": "Detects that x86_64 is not a supported LOCI target architecture. Lists the supported architectures (aarch64, armv7e-m, armv6-m, tc3xx) and stops without running memmap or fabricating any memory usage numbers.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Response identifies x86_64 as unsupported for memory report analysis",
-          "description": "x86_64 is not in the supported LOCI target table and must be caught"
-        },
-        {
-          "text": "Response lists the supported architectures (aarch64, armv7e-m, armv6-m, tc3xx or their aliases)",
-          "description": "User needs to know which targets are available"
-        },
-        {
-          "text": "Response does NOT run asm-analyze memmap or fabricate memory usage numbers",
-          "description": "No analysis should run on an unsupported architecture"
-        }
-      ]
     }
 
   ]

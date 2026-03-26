@@ -525,7 +525,7 @@ REASON: <one-line summary>"
       GRADER_BARE_FLAG=(--bare)
     fi
     T_START=$(date +%s)
-    GRADE=$(echo "$GRADE_PROMPT" | timeout --kill-after=10 "$GRADE_TIMEOUT" claude -p "${GRADER_BARE_FLAG[@]}" --model sonnet 2>"$GRADE_STDERR_FILE") || GRADE_EXIT=$?
+    GRADE=$(echo "$GRADE_PROMPT" | timeout --kill-after=10 "$GRADE_TIMEOUT" claude -p ${GRADER_BARE_FLAG[@]+"${GRADER_BARE_FLAG[@]}"} --model sonnet 2>"$GRADE_STDERR_FILE") || GRADE_EXIT=$?
     T_END=$(date +%s)
     T_ELAPSED=$((T_END - T_START))
 
@@ -549,8 +549,10 @@ REASON: <one-line summary>"
   [[ ! -s "$GRADE_STDERR_FILE" ]] && rm -f "$GRADE_STDERR_FILE"
 
     echo "$GRADE" > "$GRADE_FILE"
-    VERDICT=$(echo "$GRADE" | grep -oP 'VERDICT:\s*\K\S+' | head -1 || echo "UNKNOWN")
-    REASON=$(echo "$GRADE" | grep -oP 'REASON:\s*\K.*' | head -1 || echo "could not extract reason")
+    VERDICT=$(echo "$GRADE" | sed -n 's/^VERDICT:[[:space:]]*\([^[:space:]]*\).*/\1/p' | head -1)
+    VERDICT="${VERDICT:-UNKNOWN}"
+    REASON=$(echo "$GRADE" | sed -n 's/^REASON:[[:space:]]*//p' | head -1)
+    REASON="${REASON:-could not extract reason}"
   fi
 
   echo "${VERDICT}|${REASON}" > "$VERDICT_FILE"

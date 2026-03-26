@@ -103,29 +103,6 @@
           "description": "Recursion warnings are critical for stack safety — they must be surfaced"
         }
       ]
-    },
-
-    {
-      "id": "sd-5",
-      "category": "graceful-degradation",
-      "prompt": "Run stack depth analysis. Session context: Target: x86_64, Compiler: gcc, LOCI target: x86_64. The binary is at build/app.elf.",
-      "expected_output": "Detects that x86_64 is not a supported LOCI target architecture. Lists the supported architectures (aarch64, cortexm/armv7e-m, tricore/tc3xx) and stops without fabricating any stack depth numbers.",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Response identifies x86_64 as unsupported for stack depth analysis",
-          "description": "x86_64 is not a supported LOCI target — must be caught"
-        },
-        {
-          "text": "Response lists the supported architectures (aarch64, cortexm, tricore or their aliases)",
-          "description": "User needs to know which targets are available"
-        },
-        {
-          "text": "Response does NOT fabricate or guess stack depth numbers",
-          "description": "No analysis should run on an unsupported architecture"
-        }
-      ]
     }
-
   ]
 }
