@@ -16,7 +16,6 @@
       "description": "Context Aware for your coding agent.",
       "source": "./",
       "strict": false,
-      "hooks": "./hooks/hooks.json",
       "mcpServers": {
         "loci": {
           "type": "http",
