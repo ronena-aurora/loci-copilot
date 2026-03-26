@@ -75,6 +75,19 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 1
 fi
 
+# Resolve python — Windows ships 'python', not 'python3'
+PYTHON=""
+for _py in python3 python; do
+  if command -v "$_py" >/dev/null 2>&1 && "$_py" -c "import sys; sys.exit(0 if sys.version_info >= (3,6) else 1)" 2>/dev/null; then
+    PYTHON="$_py"
+    break
+  fi
+done
+if [[ -z "$PYTHON" ]]; then
+  echo "ERROR: Python 3.6+ not found (tried python3, python)."
+  exit 1
+fi
+
 if [[ -z "$BLE_ROOT" ]]; then
   echo "ERROR: BLE root not configured."
   echo "  Use --ble-root <path> or set LOCI_TEST_BLE_ROOT."
@@ -125,7 +138,7 @@ elif [[ -z "${ANTHROPIC_API_KEY:-}" && -n "$PLUGIN_MCP_JSON" ]]; then
   # Browser OAuth: reuse the plugin's MCP config (no Bearer token needed —
   # Claude's OAuth session authenticates with the MCP server directly).
   MCP_CONFIG="$RESULTS_DIR/.mcp-config.json"
-  python3 -c "
+  $PYTHON -c "
 import json
 with open('$PLUGIN_MCP_JSON') as f:
     p = json.load(f)
