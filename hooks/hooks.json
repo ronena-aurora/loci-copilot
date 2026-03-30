@@ -30,9 +30,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "VENV_PY=$([ -x \"$CLAUDE_PLUGIN_ROOT/.venv/Scripts/python\" ] && echo \"$CLAUDE_PLUGIN_ROOT/.venv/Scripts/python\" || echo \"$CLAUDE_PLUGIN_ROOT/.venv/bin/python\"); \"$VENV_PY\" \"$CLAUDE_PLUGIN_ROOT/hooks/count_chars.py\"",
+            "command": "VENV_PY=$([ -x \"$CLAUDE_PLUGIN_ROOT/.venv/Scripts/python\" ] && echo \"$CLAUDE_PLUGIN_ROOT/.venv/Scripts/python\" || echo \"$CLAUDE_PLUGIN_ROOT/.venv/bin/python\"); \"$VENV_PY\" \"$CLAUDE_PLUGIN_ROOT/hooks/post_edit_nudge.py\"",
             "timeout": 5,
-            "statusMessage": "Counting characters..."
+            "statusMessage": "LOCI post-edit check..."
           }
         ]
       }

@@ -4,9 +4,11 @@ description: >
   Post-edit execution analysis: after code changes, compare pre-edit and
   post-edit compiled artifacts to report execution timing % diff, energy
   consumption, and control-flow analysis for all modified/added functions.
-  Invoke when the user says "analyze the change", "measure the edit",
+  MUST be invoked automatically after any Edit/Write to C/C++/Rust source files
+  when compiled artifacts are available — do not wait for the user to ask.
+  Also invoke when the user says "analyze the change", "measure the edit",
   "post-edit", "compare before/after", "timing diff", or any time the user
-  wants execution-level feedback on a code change. 
+  wants execution-level feedback on a code change.
 ---
 
 # loci-post-edit
