@@ -210,13 +210,21 @@ install_asm_analyze() {
   VIRTUAL_ENV="$VENV_DIR" uv pip install loci_service_asmslicer --find-links "${WHEEL_DIR}" >> "$ASM_ANALYZE_LOG" 2>&1 || return 1
   VIRTUAL_ENV="$VENV_DIR" uv pip install unicorn pandas pydot >> "$ASM_ANALYZE_LOG" 2>&1 || true
 
-  # The wheel may have undeclared dependencies — detect and install them
+  # The wheel may have undeclared dependencies — detect and install them.
+  # Some Unix-only stdlib modules (e.g. resource, fcntl, grp, pwd on Windows)
+  # will appear as ModuleNotFoundError but cannot be pip-installed — skip them.
+  UNIX_ONLY_STDLIB="resource fcntl grp pwd termios syslog"
   for _attempt in 1 2 3 4 5; do
     MISSING=$("$(_venv_python)" -c "from loci.service.asmslicer import asmslicer" 2>&1 \
       | grep "ModuleNotFoundError" | head -1 \
       | sed "s/.*No module named '\([^']*\)'.*/\1/")
     if [ -z "$MISSING" ]; then
       return 0
+    fi
+    # Skip platform-specific stdlib modules that cannot be installed via pip
+    if echo " $UNIX_ONLY_STDLIB " | grep -q " $MISSING "; then
+      echo "Skipping Unix-only stdlib module: ${MISSING}" >> "$ASM_ANALYZE_LOG"
+      break
     fi
     echo "Installing undeclared dependency: ${MISSING}" >> "$ASM_ANALYZE_LOG"
     VIRTUAL_ENV="$VENV_DIR" uv pip install "$MISSING" >> "$ASM_ANALYZE_LOG" 2>&1 || return 1
