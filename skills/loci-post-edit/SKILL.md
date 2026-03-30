@@ -41,7 +41,7 @@ If the architecture is **not** in this table, emit and stop:
 
 ```
 
-Supported: aarch64 , armv7e-m , armv6-m , tc3xx 
+Supported: aarch64 , armv7e-m , armv6-m , tc399
 ```
 
 If no compiler was detected, inform the user and stop.

@@ -106,6 +106,8 @@ The JSON output contains per-entry-function results with:
 
 ## Step 2: Report Results
 
+**Important:** Always include `Worst-case path` for every reported function — do not omit it even when reporting many functions. If the output would be long, limit the number of functions reported (e.g., top 10 by depth) but always show the complete report for each function you do include.
+
 ### Per-function report
 
 For each entry function, report:
