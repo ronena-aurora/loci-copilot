@@ -6,6 +6,9 @@ Fires before Write/Edit/MultiEdit. If the incoming content introduces a new
 function definition it runs a fast call-graph pattern check:
   1. Call graph ordering  (forward-ref / recursion hazards)
 
+Additionally, for C/C++ source files, snapshots the corresponding .o file
+as .o.prev so the post-edit skill can compute execution diffs.
+
 Findings are printed to stdout so Claude sees them before writing.
 The hook always exits 0 (advisory, never blocking) — the skill layer decides
 whether to PROCEED, PROCEED WITH CAUTION, or STOP.
@@ -15,8 +18,12 @@ import json
 import re
 import sys
 import os
+import shutil
 from dataclasses import dataclass, field
 from typing import Optional
+
+# ── C/C++ source extensions ──────────────────────────────────────────────────
+_SOURCE_EXTS = {".c", ".cc", ".cpp", ".cxx", ".h", ".hpp", ".hxx", ".rs"}
 
 # ── data types ────────────────────────────────────────────────────────────────
 
@@ -147,6 +154,29 @@ def render_report(func_name: str, findings: list[Finding]) -> str:
     return "\n".join(lines)
 
 
+def _snapshot_object_file(file_path: str) -> None:
+    """If file_path is a C/C++ source and a matching .o exists, copy it to .o.prev."""
+    _, ext = os.path.splitext(file_path)
+    if ext.lower() not in _SOURCE_EXTS:
+        return
+
+    base_no_ext = os.path.splitext(file_path)[0]
+    obj_path = base_no_ext + ".o"
+
+    if not os.path.isfile(obj_path):
+        return
+
+    prev_path = obj_path + ".prev"
+    try:
+        shutil.copy2(obj_path, prev_path)
+        print(
+            f"[loci] Saved pre-edit snapshot: {prev_path}",
+            flush=True,
+        )
+    except OSError:
+        pass  # best-effort, don't block the edit
+
+
 def main():
     try:
         data = json.load(sys.stdin)
@@ -162,6 +192,10 @@ def main():
         skip_patterns = (".claude/plans/", ".md", ".json", ".yml", ".yaml", ".toml")
         if any(p in file_path.replace("\\", "/") for p in skip_patterns):
             sys.exit(0)
+
+    # Snapshot .o → .o.prev before the edit touches the source
+    if file_path:
+        _snapshot_object_file(file_path)
 
     code = extract_code(tool_name, tool_input)
     if not code:
