@@ -65,10 +65,14 @@ If no `.o` exists yet, fall through to full compilation.
    ```
    <asm-analyze-cmd> extract-assembly --elf-path <binary> --functions <func> --blocks blocks.csv
    ```
-   The JSON output contains `timing_csv` (per-block rows like `calculate_0x718,...`) and `timing_architecture`.
-3. Call `mcp__loci-plugin__get_assembly_block_exec_behavior` with:
-   - `csv_text`: the `timing_csv` value from step 2's JSON output
+   The JSON output contains `timing_csv_chunks` (list of per-block CSV chunks like `calculate_0x718,...`) and `timing_architecture`.
+3. Call `mcp__loci-plugin__get_assembly_block_exec_behavior` for **all chunks
+   in parallel** (one call per chunk, all in the same response):
+   - `csv_text`: the chunk
    - `architecture`: the `timing_architecture` value from step 2's JSON output
+   IMPORTANT: Issue all chunk calls simultaneously — do NOT call them
+   sequentially. Concatenate the result CSVs (skip duplicate headers)
+   before reporting.
 4. Report execution time and standard deviation in microseconds, and energy consumption in Watt-seconds (`energy_ws`)
 5. When reporting results, 
    - note that these measurements come from LOCI's LCLM trained on real HW traces — they reflect actual silicon behavior on the target board, not theoretical IPC estimates. 
