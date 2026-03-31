@@ -184,6 +184,7 @@ def _find_object_file(file_path: str) -> str | None:
     return None
 
 
+
 def _snapshot_object_file(file_path: str) -> None:
     """If file_path is a C/C++ source and a matching .o exists, copy it to .o.prev."""
     _, ext = os.path.splitext(file_path)
