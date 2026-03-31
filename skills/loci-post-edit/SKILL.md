@@ -30,15 +30,34 @@ For plugin to work mcp should be authenticated and connected.
 
 ## Step 0: Check session context
 
-Read architecture and compiler from the LOCI session context (the
-`system-reminder` block emitted at session start). Look for:
+Read the persisted detection results from `state/project-context.json` in the
+plugin directory. This file is written once by setup.sh at session start and is
+the single source of truth for compiler, architecture, and build system.
+**Do NOT re-run detection or fall back to ELF/build-system sniffing.**
+
+```json
+{
+  "compiler": "...",
+  "build_system": "...",
+  "architecture": "...",
+  "loci_target": "...",
+  ...
+}
+```
+
+If the file does not exist, stop and tell the user:
+
+> LOCI session context not found. Please restart Claude Code so the plugin
+> setup runs and detects the project environment.
+
+Also check the `system-reminder` block emitted at session start for:
 
 ```
 Target: <target>, Compiler: <compiler>, Build: <build>
 LOCI target: <loci_target>
 ```
 
-Map the LOCI target to loci MCP suported architectues and binary targets:
+Map the LOCI target to loci MCP supported architectures and binary targets:
 
 | LOCI target |   Time from CPU  |
 |---|---|
@@ -50,25 +69,24 @@ Map the LOCI target to loci MCP suported architectues and binary targets:
 If the architecture is **not** in this table, emit and stop:
 
 ```
-
 Supported: aarch64 , armv7e-m , armv6-m , tc399
 ```
 
-If no compiler was detected, inform the user and stop.
-
-Do **not** re-run detection scripts — use the values already in the session context.
-
 ## Step 1: Identify pre-edit and post-edit artifacts
 
-Use the **session context** from step 0 (detected binaries, build system,
-compiler) to locate the compiled artifact (`.o` or linked binary) for the
-edited source file. Check the build output directory from the project's
-build system, not just the source directory.
+Locate the compiled artifact (`.o` or linked binary) for the edited source.
+Check build output directories from the project's build system, not just the
+source directory.
 
-The preflight hook automatically saves a pre-edit snapshot as
-`<name>.o.prev` next to the `.o`. If no `.o.prev` exists, proceed with
-absolute timing only (no % diff). If no artifacts exist at all, note
-"(no binary)" and stop.
+If no post-edit `.o` exists, compile the edited source with `-c` using the
+compiler and flags from step 0 (same as preflight Step 1):
+```
+<compiler> <flags> -c <source> -o <basename>.o
+```
+
+For the pre-edit artifact: the preflight hook saves `<name>.o.prev`
+automatically. If preflight did not run (no `.o.prev`), proceed with
+absolute timing only — no % diff.
 
 ## Step 2: diff-elfs — find modified/added functions
 

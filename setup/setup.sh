@@ -292,6 +292,15 @@ echo "  Sources:    $NUM_SRC files"
 echo "  Binaries:   $NUM_BIN found"
 echo "  Assembly:   $NUM_ASM files"
 
+# Persist detection results per project so skills consume them without re-detecting
+STATE_DIR="${PLUGIN_DIR}/state"
+mkdir -p "$STATE_DIR"
+PROJECT_HASH=$(echo -n "$(pwd)" | shasum -a 256 | cut -c1-12)
+echo "$PROJECT_INFO" | jq --arg pwd "$(pwd)" \
+  '. + {project_root: $pwd}' > "${STATE_DIR}/project-context-${PROJECT_HASH}.json"
+ln -sf "project-context-${PROJECT_HASH}.json" "${STATE_DIR}/project-context.json" 2>/dev/null \
+  || cp "${STATE_DIR}/project-context-${PROJECT_HASH}.json" "${STATE_DIR}/project-context.json"
+
 # 6. Validate hooks.json
 echo -n "Validating hooks... "
 if jq empty "${PLUGIN_DIR}/hooks/hooks.json" 2>/dev/null; then

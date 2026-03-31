@@ -48,8 +48,27 @@ the user:
 
 For plugin to work mcp should be authenticated and connected.
 
-Read architecture and compiler from the LOCI session context (the
-`system-reminder` block emitted at session start). Look for:
+Read the persisted detection results from `state/project-context.json` in the
+plugin directory. This file is written once by setup.sh at session start and is
+the single source of truth for compiler, architecture, and build system.
+**Do NOT re-run detection scripts.**
+
+```json
+{
+  "compiler": "...",
+  "build_system": "...",
+  "architecture": "...",
+  "loci_target": "...",
+  ...
+}
+```
+
+If the file does not exist, stop and tell the user:
+
+> LOCI session context not found. Please restart Claude Code so the plugin
+> setup runs and detects the project environment.
+
+Also check the `system-reminder` block emitted at session start for:
 
 ```
 Target: <target>, Compiler: <compiler>, Build: <build>
@@ -85,8 +104,6 @@ No compiler detected in session context.
 Preflight requires compiled artifacts — it does not fall back to source-level reasoning.
 Action: resolve the build environment, then re-run preflight.
 ```
-
-Do **not** re-run detection scripts — use the values already in the session context.
 
 ## Step 1: Compile or locate artifact
 
