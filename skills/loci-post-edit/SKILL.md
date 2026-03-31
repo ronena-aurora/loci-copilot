@@ -61,14 +61,15 @@ Do **not** re-run detection scripts — use the values already in the session co
 
 ## Step 1: Identify pre-edit and post-edit artifacts
 
-The user provides or points to both pre-edit and post-edit `.o` or binary files.
-These may be:
-- Two `.o` files (e.g. `func.o.prev` and `func.o`)
-- Two binaries/ELFs
-- A single post-edit artifact (no pre-edit available)
+Use the **session context** from step 0 (detected binaries, build system,
+compiler) to locate the compiled artifact (`.o` or linked binary) for the
+edited source file. Check the build output directory from the project's
+build system, not just the source directory.
 
-If no pre-edit artifact exists, proceed with absolute timing only (no % diff).
-If no artifacts exist at all, note "(no binary)" and stop.
+The preflight hook automatically saves a pre-edit snapshot as
+`<name>.o.prev` next to the `.o`. If no `.o.prev` exists, proceed with
+absolute timing only (no % diff). If no artifacts exist at all, note
+"(no binary)" and stop.
 
 ## Step 2: diff-elfs — find modified/added functions
 

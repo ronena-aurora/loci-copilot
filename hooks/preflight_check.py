@@ -154,16 +154,44 @@ def render_report(func_name: str, findings: list[Finding]) -> str:
     return "\n".join(lines)
 
 
+_BUILD_DIRS = ("build", "out", "Debug", "Release", "output", "bin", "obj",
+               "artifacts", ".loci-build")
+
+
+def _find_object_file(file_path: str) -> str | None:
+    """Find the .o file for a source, checking build dirs then same dir."""
+    basename = os.path.splitext(os.path.basename(file_path))[0] + ".o"
+    project_root = os.getcwd()
+
+    # 1. Common build output directories (2 levels deep)
+    for d in _BUILD_DIRS:
+        build_dir = os.path.join(project_root, d)
+        if not os.path.isdir(build_dir):
+            continue
+        for root, _dirs, files in os.walk(build_dir):
+            if basename in files:
+                return os.path.join(root, basename)
+            # Limit depth to 2
+            depth = root[len(build_dir):].count(os.sep)
+            if depth >= 2:
+                _dirs.clear()
+
+    # 2. Same directory as source
+    obj_path = os.path.splitext(file_path)[0] + ".o"
+    if os.path.isfile(obj_path):
+        return obj_path
+
+    return None
+
+
 def _snapshot_object_file(file_path: str) -> None:
     """If file_path is a C/C++ source and a matching .o exists, copy it to .o.prev."""
     _, ext = os.path.splitext(file_path)
     if ext.lower() not in _SOURCE_EXTS:
         return
 
-    base_no_ext = os.path.splitext(file_path)[0]
-    obj_path = base_no_ext + ".o"
-
-    if not os.path.isfile(obj_path):
+    obj_path = _find_object_file(file_path)
+    if not obj_path:
         return
 
     prev_path = obj_path + ".prev"
