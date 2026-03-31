@@ -293,6 +293,28 @@ def match_function(query: str, sym_name: str, sym_long_name: str) -> bool:
     return False
 
 
+def chunk_timing_csv(csv_text: str, max_chars: int = 90000) -> list[str]:
+    """Split timing CSV into chunks that fit within MCP token limits.
+
+    Each chunk keeps the header row. max_chars defaults to 90 000
+    (~30 000 tokens at ~3 chars/token).
+    """
+    lines = csv_text.splitlines(keepends=True)
+    if not lines:
+        return [csv_text]
+    header = lines[0]
+    chunks: list[str] = []
+    current = header
+    for line in lines[1:]:
+        if len(current) + len(line) > max_chars:
+            chunks.append(current)
+            current = header
+        current += line
+    if current != header or not chunks:
+        chunks.append(current)
+    return chunks
+
+
 def parse_blocks_to_timing_csv(blocks_text: str,
                                 functions: list[str] | None = None) -> str:
     """Parse blocks CSV and produce timing-format CSV.
@@ -487,6 +509,7 @@ def extract_assembly(elf_path: str, functions: list[str] | None = None,
         "timing_architecture": timing_arch(detected_arch) if detected_arch else None,
         "functions": functions_out,
         "timing_csv": timing_csv,
+        "timing_csv_chunks": chunk_timing_csv(timing_csv),
         "control_flow_graph": cfg_text,
     }
     if blocks_file and blocks_text:

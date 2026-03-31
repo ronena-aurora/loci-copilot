@@ -18,7 +18,16 @@ analysis into a single post-edit report. It compares pre-edit and post-edit
 compiled artifacts to show exactly how the change affects hardware execution.
 
 
-Check that loci MCP is connected and authenticated, you see the tools before running the preflight steps that require it. If the MCP is unavailable request the user to authenticate it. For plugin to work mcp should be authenticated and connected.
+Check that loci MCP is connected and authenticated, you see the tools before
+running the preflight steps that require it. If the MCP is unavailable, tell
+the user:
+
+> LOCI MCP server is not connected. Please run `/mcp` in Claude Code to
+> manage MCP servers, then approve the **loci** server. If it does not
+> appear, restart Claude Code — the plugin registers it automatically on
+> startup.
+
+For plugin to work mcp should be authenticated and connected.
 
 ## Step 0: Check session context
 
@@ -52,14 +61,15 @@ Do **not** re-run detection scripts — use the values already in the session co
 
 ## Step 1: Identify pre-edit and post-edit artifacts
 
-The user provides or points to both pre-edit and post-edit `.o` or binary files.
-These may be:
-- Two `.o` files (e.g. `func.o.prev` and `func.o`)
-- Two binaries/ELFs
-- A single post-edit artifact (no pre-edit available)
+Use the **session context** from step 0 (detected binaries, build system,
+compiler) to locate the compiled artifact (`.o` or linked binary) for the
+edited source file. Check the build output directory from the project's
+build system, not just the source directory.
 
-If no pre-edit artifact exists, proceed with absolute timing only (no % diff).
-If no artifacts exist at all, note "(no binary)" and stop.
+The preflight hook automatically saves a pre-edit snapshot as
+`<name>.o.prev` next to the `.o`. If no `.o.prev` exists, proceed with
+absolute timing only (no % diff). If no artifacts exist at all, note
+"(no binary)" and stop.
 
 ## Step 2: diff-elfs — find modified/added functions
 
@@ -99,14 +109,19 @@ the calls for extracting fields from the json output:
 
   data = json.load(...)
   cfg_text = data["control_flow_graph"]    # all functions, annotated CFG blocks
-  timing_csv = data["timing_csv"]          # per-block CSV for MCP
+  timing_csv_chunks = data["timing_csv_chunks"]  # list of per-block CSV chunks for MCP
   timing_architecture = data["timing_architecture"]    # timing architecture
 
 ## Step 4: LOCI MCP timing — compute % diff
 
-Call `mcp__loci-plugin__get_assembly_block_exec_behavior` with:
-- `csv_text`: the `timing_csv` value from step 3
+Call `mcp__loci-plugin__get_assembly_block_exec_behavior` for **all chunks in
+parallel** (one call per chunk, all in the same response):
+- `csv_text`: the chunk
 - `architecture`: the `timing_architecture` value from step 3
+
+IMPORTANT: Issue all chunk calls simultaneously in a single message — do NOT
+call them sequentially. Concatenate the result CSVs (skip duplicate headers)
+before computing metrics.
 
 Do this for both pre-edit and post-edit assembly of modified functions, and
 for post-edit only of added functions.

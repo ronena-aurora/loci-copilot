@@ -38,9 +38,15 @@ preflight report as a section of the plan before listing the edit steps.
 ## Step 0: Check session context
 
 Check that loci MCP is connected and authenticated, you see the tools before
-running the preflight steps that require it. If the MCP is unavailable request
-the user to authenticate it. For plugin to work mcp should be authenticated
-and connected.
+running the preflight steps that require it. If the MCP is unavailable, tell
+the user:
+
+> LOCI MCP server is not connected. Please run `/mcp` in Claude Code to
+> manage MCP servers, then approve the **loci** server. If it does not
+> appear, restart Claude Code — the plugin registers it automatically on
+> startup.
+
+For plugin to work mcp should be authenticated and connected.
 
 Read architecture and compiler from the LOCI session context (the
 `system-reminder` block emitted at session start). Look for:
@@ -142,14 +148,14 @@ Extract CFGs for the callees the new function will invoke:
 The JSON contains the `control_flow_graph` field with annotated CFGs in
 text-format optimized for LLM analysis.
 
-The JSON output contains `timing_csv` and `timing_architecture` fields needed
+The JSON output contains `timing_csv_chunks`, `timing_csv`, and `timing_architecture` fields needed
 for the MCP call.
 
 the calls for extracting fields from the json output:
 
   data = json.load(...)
   cfg_text = data["control_flow_graph"]    # all functions, annotated CFG blocks
-  timing_csv = data["timing_csv"]          # per-block CSV for MCP
+  timing_csv_chunks = data["timing_csv_chunks"]  # list of per-block CSV chunks for MCP
   timing_architecture = data["timing_architecture"]    # timing architecture
 
 
@@ -158,9 +164,14 @@ the calls for extracting fields from the json output:
 Immediately after extraction, get hardware-accurate timing and energy for the
 callees:
 
-Call `mcp__loci-plugin__get_assembly_block_exec_behavior` with:
-- `csv_text`: the `timing_csv` field from the output above
+Call `mcp__loci-plugin__get_assembly_block_exec_behavior` for **all chunks in
+parallel** (one call per chunk, all in the same response):
+- `csv_text`: the chunk
 - `architecture`: the `timing_architecture` field from the output above
+
+IMPORTANT: Issue all chunk calls simultaneously in a single message — do NOT
+call them sequentially. Concatenate the result CSVs (skip duplicate headers)
+before computing per-callee metrics.
 
 Compute per-callee:
 - **Happy path** = `execution_time_ns` - `std_dev`
