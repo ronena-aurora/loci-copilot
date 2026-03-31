@@ -30,15 +30,34 @@ For plugin to work mcp should be authenticated and connected.
 
 ## Step 0: Check session context
 
-Read architecture and compiler from the LOCI session context (the
-`system-reminder` block emitted at session start). Look for:
+Read the persisted detection results from `state/project-context.json` in the
+plugin directory. This file is written once by setup.sh at session start and is
+the single source of truth for compiler, architecture, and build system.
+**Do NOT re-run detection or fall back to ELF/build-system sniffing.**
+
+```json
+{
+  "compiler": "...",
+  "build_system": "...",
+  "architecture": "...",
+  "loci_target": "...",
+  ...
+}
+```
+
+If the file does not exist, stop and tell the user:
+
+> LOCI session context not found. Please restart Claude Code so the plugin
+> setup runs and detects the project environment.
+
+Also check the `system-reminder` block emitted at session start for:
 
 ```
 Target: <target>, Compiler: <compiler>, Build: <build>
 LOCI target: <loci_target>
 ```
 
-Map the LOCI target to loci MCP suported architectues and binary targets:
+Map the LOCI target to loci MCP supported architectures and binary targets:
 
 | LOCI target |   Time from CPU  |
 |---|---|
@@ -50,12 +69,8 @@ Map the LOCI target to loci MCP suported architectues and binary targets:
 If the architecture is **not** in this table, emit and stop:
 
 ```
-
 Supported: aarch64 , armv7e-m , armv6-m , tc399
 ```
-
-If no session context is detected, do not stop — detect the architecture
-from existing ELF artifacts or the project build system, same as preflight.
 
 ## Step 1: Identify pre-edit and post-edit artifacts
 
