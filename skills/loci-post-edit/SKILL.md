@@ -1,14 +1,13 @@
 ---
 name: loci-post-edit
 description: >
-  Post-edit execution analysis: after code changes, compare pre-edit and
-  post-edit compiled artifacts to report execution timing % diff, energy
-  consumption, and control-flow analysis for all modified/added functions.
-  MUST be invoked automatically after any Edit/Write to C/C++/Rust source files
-  when compiled artifacts are available — do not wait for the user to ask.
+  MANDATORY after edits: after any Edit/Write/MultiEdit to C/C++/Rust source
+  files (.c, .cc, .cpp, .cxx, .h, .hpp, .hxx, .rs), invoke this skill
+  IMMEDIATELY — do NOT skip it, do NOT wait to be asked, do NOT batch.
+  Compare pre-edit and post-edit compiled artifacts to report execution
+  timing % diff, energy consumption, and control-flow analysis.
   Also invoke when the user says "analyze the change", "measure the edit",
-  "post-edit", "compare before/after", "timing diff", or any time the user
-  wants execution-level feedback on a code change.
+  "post-edit", "compare before/after", or "timing diff".
 ---
 
 # loci-post-edit
@@ -156,6 +155,9 @@ Energy:       XXX.XX uWs      XXX.XX uWs      +X.X% | -X.X%
 
 ### Control Flow
 <brief CFG analysis from step 4>
+
+### Reasoning
+<implementation verification — see below>
 ```
 
 ### New/added functions
@@ -170,6 +172,9 @@ Energy:       XXX.XX uWs
 
 ### Control Flow
 <CFG analysis from step 4>
+
+### Reasoning
+<implementation verification — see below>
 ```
 
 ### No pre-edit artifact (absolute only)
@@ -185,7 +190,30 @@ Energy:       XXX.XX uWs
 
 ### Control Flow
 <CFG analysis>
+
+### Reasoning
+<implementation verification — see below>
 ```
+
+### Reasoning section guidelines
+
+The **Reasoning** section verifies whether the implementation is sound based
+on the LOCI timing, energy, and CFG data above. Address each of these:
+
+1. **Timing impact** — Is the timing diff expected given the code change?
+   Flag unexpected regressions (e.g. a "simple guard" that adds >10% worst
+   path). Note when the change is timing-neutral or improves performance.
+2. **Hotspot check** — Using the CFG and per-block timing, identify the
+   hottest block(s). Does the new/changed code sit on the hot path? If yes,
+   call it out.
+3. **Std-dev confidence** — High `std_dev` means the assembly pattern is
+   underrepresented in LCLM training data. Flag any block where
+   `std_dev > execution_time_ns` as low-confidence.
+4. **Energy budget** — Is the energy delta acceptable for the target? For
+   battery-powered / embedded targets, flag increases above 5%.
+5. **Verdict** — One line: does the implementation look correct from an
+   execution perspective? Use: OK, CAUTION (with reason), or FLAG (with
+   specific concern).
 
 ## LOCI footer
 
@@ -194,10 +222,12 @@ last thing printed — **only if N > 0**. If no functions were processed, do NOT
 
 ```
 ─── LOCI · post-edit ───────────────────
-  <N> functions · <M> MCP calls for execution behavior
+  <N> functions · <M> MCP calls · <R> reasoning cycles
+  Verdict: <OK | CAUTION | FLAG> — <one-line summary>
 ────────────────────────────────────────
 ```
 
 - **N** = unique functions (modified + added) whose assembly was sent to LOCI
 - **M** = MCP calls to `mcp__loci-plugin__get_assembly_block_exec_behavior` (exec-behaviors)
   (typically 2 for modified functions: pre + post; 1 for added functions)
+- **R** = reasoning cycles (one per function that has a Reasoning section)
