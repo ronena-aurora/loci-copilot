@@ -296,9 +296,8 @@ echo "  Assembly:   $NUM_ASM files"
 STATE_DIR="${PLUGIN_DIR}/state"
 mkdir -p "$STATE_DIR"
 PROJECT_HASH=$(echo -n "$(pwd)" | shasum -a 256 | cut -c1-12)
-PLUGIN_VERSION=$(jq -r '.plugins[0].version // "unknown"' "${PLUGIN_DIR}/.claude-plugin/marketplace.json" 2>/dev/null)
-echo "$PROJECT_INFO" | jq --arg pwd "$(pwd)" --arg ver "$PLUGIN_VERSION" \
-  '. + {project_root: $pwd, plugin_version: $ver}' > "${STATE_DIR}/project-context-${PROJECT_HASH}.json"
+echo "$PROJECT_INFO" | jq --arg pwd "$(pwd)" \
+  '. + {project_root: $pwd}' > "${STATE_DIR}/project-context-${PROJECT_HASH}.json"
 ln -sf "project-context-${PROJECT_HASH}.json" "${STATE_DIR}/project-context.json" 2>/dev/null \
   || cp "${STATE_DIR}/project-context-${PROJECT_HASH}.json" "${STATE_DIR}/project-context.json"
 
