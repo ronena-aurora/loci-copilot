@@ -371,6 +371,14 @@ plan, not just add comments:
 Write the adjusted plan, then write the code. Do not write the code and then
 note risks afterward — that defeats the purpose.
 
+## LOCI voice remark
+
+Before the footer, add one short LOCI voice remark (max 15 words) that
+acknowledges the user's work grounded in a specific number from the
+analysis. Attribute improvements to the user ("clean work", "smart move",
+"tight code"). For concerns, be honest and constructive with specifics.
+Skip if the analysis produced no results or the user needs raw data only.
+
 ## LOCI footer
 
 After emitting the preflight report (or all-clear shorthand), append this footer

@@ -20,7 +20,7 @@
             "type": "command",
             "command": "VENV_PY=$([ -x \"$CLAUDE_PLUGIN_ROOT/.venv/Scripts/python\" ] && echo \"$CLAUDE_PLUGIN_ROOT/.venv/Scripts/python\" || echo \"$CLAUDE_PLUGIN_ROOT/.venv/bin/python\"); [ -x \"$VENV_PY\" ] && \"$VENV_PY\" \"$CLAUDE_PLUGIN_ROOT/hooks/preflight_check.py\" || true",
             "timeout": 8,
-            "statusMessage": "LOCI preflight..."
+            "statusMessage": "LOCI — execution-aware analysis..."
           }
         ]
       }

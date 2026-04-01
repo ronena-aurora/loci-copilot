@@ -246,15 +246,16 @@ _welcome_text() {
     [ -f "$marker" ] && return 0
 
     cat <<'WELCOME'
-Welcome to LOCI!
+LOCI is ready.
 
-Try these:
+Try:
   "What's the execution cost of main()?"   → timing & energy
   "How much ROM/RAM does my build use?"    → memory report
   "Is my stack safe for TaskMain?"         → stack depth
 
-LOCI auto-runs during /plan (preflight) and after edits (post-edit).
-Note: Authorize the LOCI MCP server when prompted to enable timing/energy analysis.
+Auto-runs during /plan and after edits — no setup needed.
+Authorize the MCP server when prompted for timing/energy.
+Type /help for the full rundown.
 WELCOME
 
     touch "$marker" 2>/dev/null
@@ -298,8 +299,24 @@ _first_time_setup >&2      # setup logs go to stderr (not parsed as hook output)
 _detect_and_write_context
 
 # Build additionalContext for Claude (invisible to user, injected into session)
-CONTEXT=$(printf 'Target: %s, Compiler: %s, Build: %s\nLOCI target: %s\nBranch: %s\nAvailable: /help, /exec-trace, /stack-depth, /memory-report, /control-flow\nAuto-runs: loci-preflight (in /plan), loci-post-edit (after edits)' \
-    "$_CTX_TARGET" "$_CTX_COMPILER" "$_CTX_BUILD" "$_CTX_TARGET" "$_CTX_BRANCH")
+LOCI_VOICE='LOCI voice: When presenting LOCI analysis results, adopt Aurora Labs "Proof, Not Promises" tone — numerically specific, technically confident, peer-to-peer. Add one short remark per report (max 15 words) that acknowledges the user'\''s work grounded in actual data. LOCI is a buddy that notices good engineering and flags real concerns honestly.
+Positive feedback (attribute results to the user'\''s work):
+- "That refactor cut worst path by 18%. Clean work."
+- "Stack usage down 12% — smart move pulling that buffer off the stack."
+- "3 functions, all under 200ns. This is tight code."
+- "Energy per call dropped 0.8 uWs. Battery-friendly change."
+- "ROM barely moved — +24 bytes. Minimal impact."
+Honest concerns (constructive, with specifics):
+- "Worst path grew 340ns. Might be worth looking at that snprintf on Cortex-M4."
+- "Stack at 78% budget. Still passes, but getting tight."
+- "Energy up 2.1 uWs per iteration — worth batching if this runs on battery."
+Neutral (when results are baseline or first measurement):
+- "Callees look clean. No issues."
+- "First measurement recorded — this is your baseline."
+Rules: Always cite numbers. Never use emoji. Never be vague ("looks good" without data). Attribute improvements to the user. Skip the remark when results are complex or the user needs raw data only. This is a presentation tone, not a persona — do not roleplay.'
+
+CONTEXT=$(printf 'Target: %s, Compiler: %s, Build: %s\nLOCI target: %s\nBranch: %s\nAvailable: /help, /exec-trace, /stack-depth, /memory-report, /control-flow\nAuto-runs: loci-preflight (in /plan), loci-post-edit (after edits)\n%s' \
+    "$_CTX_TARGET" "$_CTX_COMPILER" "$_CTX_BUILD" "$_CTX_TARGET" "$_CTX_BRANCH" "$LOCI_VOICE")
 
 # Build visible welcome for user (one-time)
 WELCOME=$(_welcome_text)

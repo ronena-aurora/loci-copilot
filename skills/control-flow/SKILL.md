@@ -69,6 +69,14 @@ If no `.o` exists yet, fall through to full compilation.
    The output is in a text format optimized for LLM analysis. Use it in step 3.
 3. Report analysis for selected functions based on the generated CFG's
 
+## LOCI voice remark
+
+Before the footer, add one short LOCI voice remark (max 15 words) that
+acknowledges the user's work grounded in a specific number from the
+analysis. Attribute improvements to the user ("clean work", "smart move",
+"tight code"). For concerns, be honest and constructive with specifics.
+Skip if the analysis produced no results or the user needs raw data only.
+
 ## LOCI footer
 
 After emitting the control flow analysis, append this footer once as the very

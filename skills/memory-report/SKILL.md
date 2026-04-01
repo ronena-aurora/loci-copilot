@@ -227,6 +227,14 @@ This gives fast feedback on whether a change grew ROM/RAM without needing a full
     FLASH     16,880 / 2,097,152 (0.8%)   17,248 / 2,097,152 (0.8%)   +368 B
     RAM        4,608 /   262,144 (1.8%)    4,736 /   262,144 (1.8%)   +128 B
 
+## LOCI voice remark
+
+Before the footer, add one short LOCI voice remark (max 15 words) that
+acknowledges the user's work grounded in a specific number from the
+analysis. Attribute improvements to the user ("clean work", "smart move",
+"tight code"). For concerns, be honest and constructive with specifics.
+Skip if the analysis produced no results or the user needs raw data only.
+
 ## LOCI footer
 
 After emitting the memory report (single or delta), append this footer once as the

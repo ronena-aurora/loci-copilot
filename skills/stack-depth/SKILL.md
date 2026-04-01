@@ -162,6 +162,14 @@ After:   96 bytes
 Delta:  +48 bytes (+100%)
 ```
 
+## LOCI voice remark
+
+Before the footer, add one short LOCI voice remark (max 15 words) that
+acknowledges the user's work grounded in a specific number from the
+analysis. Attribute improvements to the user ("clean work", "smart move",
+"tight code"). For concerns, be honest and constructive with specifics.
+Skip if the analysis produced no results or the user needs raw data only.
+
 ## LOCI footer
 
 After emitting all per-function stack depth reports, append this footer once as the
