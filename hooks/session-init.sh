@@ -241,17 +241,21 @@ _first_time_setup() {
     rmdir "$lock" 2>/dev/null; trap - EXIT
 }
 
-_welcome() {
+_welcome_text() {
     local marker="${PLUGIN_DIR}/.welcome-shown"
     [ -f "$marker" ] && return 0
 
-    printf '\nWelcome to LOCI!\n\n'
-    printf 'Try these:\n'
-    printf '  "What'\''s the execution cost of main()?"        → timing & energy\n'
-    printf '  "How much ROM/RAM does my build use?"          → memory report\n'
-    printf '  "Is my stack safe for TaskMain?"               → stack depth\n'
-    printf '\nLOCI auto-runs during /plan (preflight) and after edits (post-edit).\n'
-    printf '\nNote: Authorize the LOCI MCP server when prompted to enable timing/energy analysis.\n'
+    cat <<'WELCOME'
+Welcome to LOCI!
+
+Try these:
+  "What's the execution cost of main()?"   → timing & energy
+  "How much ROM/RAM does my build use?"    → memory report
+  "Is my stack safe for TaskMain?"         → stack depth
+
+LOCI auto-runs during /plan (preflight) and after edits (post-edit).
+Note: Authorize the LOCI MCP server when prompted to enable timing/energy analysis.
+WELCOME
 
     touch "$marker" 2>/dev/null
 }
@@ -282,16 +286,38 @@ _detect_and_write_context() {
     (cd "$STATE_DIR" && ln -sf "$(basename "$KEYED")" project-context.json 2>/dev/null) \
         || cp "$KEYED" "${STATE_DIR}/project-context.json" 2>/dev/null
 
-    # Context reminder — Claude Code injects SessionStart stdout into the
-    # session, making this available to skills without re-running detection.
-    printf '\nTarget: %s, Compiler: %s, Build: %s\nLOCI target: %s\nBranch: %s\n' \
-        "$LOCI_TARGET" "$COMPILER" "$BUILD_SYS" "$LOCI_TARGET" "$GIT_BRANCH"
-    printf 'Available: /exec-trace, /stack-depth, /memory-report, /control-flow\n'
-    printf 'Auto-runs: loci-preflight (in /plan), loci-post-edit (after edits)\n'
+    # Export for JSON output
+    _CTX_TARGET="$LOCI_TARGET"
+    _CTX_COMPILER="$COMPILER"
+    _CTX_BUILD="$BUILD_SYS"
+    _CTX_BRANCH="$GIT_BRANCH"
 }
 
 # ── main ──────────────────────────────────────────────────────────────────────
-_first_time_setup
+_first_time_setup >&2      # setup logs go to stderr (not parsed as hook output)
 _detect_and_write_context
-_welcome
+
+# Build additionalContext for Claude (invisible to user, injected into session)
+CONTEXT=$(printf 'Target: %s, Compiler: %s, Build: %s\nLOCI target: %s\nBranch: %s\nAvailable: /exec-trace, /stack-depth, /memory-report, /control-flow\nAuto-runs: loci-preflight (in /plan), loci-post-edit (after edits)' \
+    "$_CTX_TARGET" "$_CTX_COMPILER" "$_CTX_BUILD" "$_CTX_TARGET" "$_CTX_BRANCH")
+
+# Build visible welcome for user (one-time)
+WELCOME=$(_welcome_text)
+
+# Output JSON — Claude Code renders systemMessage visibly and injects
+# additionalContext into the conversation for Claude to read.
+"$JQ" -n \
+    --arg ctx "$CONTEXT" \
+    --arg welcome "$WELCOME" \
+    '{
+        hookSpecificOutput: {
+            hookEventName: "SessionStart",
+            additionalContext: $ctx
+        }
+    }
+    + if ($welcome | length) > 0
+      then { systemMessage: $welcome }
+      else {}
+      end'
+
 exit 0
