@@ -230,6 +230,16 @@ _first_time_setup() {
 
     echo "$ver" > "$SETUP_MARKER"
     printf 'LOCI: setup complete\n'
+
+    # First-run welcome — only prints once after initial install
+    printf '\nWelcome to LOCI!\n\n'
+    printf 'Try these:\n'
+    printf '  "What'\''s the execution cost of main()?"        → timing & energy\n'
+    printf '  "How much ROM/RAM does my build use?"          → memory report\n'
+    printf '  "Is my stack safe for TaskMain?"               → stack depth\n'
+    printf '\nLOCI auto-runs during /plan (preflight) and after edits (post-edit).\n'
+    printf '\nNote: Authorize the LOCI MCP server when prompted to enable timing/energy analysis.\n'
+
     rmdir "$lock" 2>/dev/null; trap - EXIT
 }
 
@@ -260,6 +270,8 @@ _detect_and_write_context() {
     # session, making this available to skills without re-running detection.
     printf '\nTarget: %s, Compiler: %s, Build: %s\nLOCI target: %s\n' \
         "$LOCI_TARGET" "$COMPILER" "$BUILD_SYS" "$LOCI_TARGET"
+    printf 'Available: /exec-trace, /stack-depth, /memory-report, /control-flow\n'
+    printf 'Auto-runs: loci-preflight (in /plan), loci-post-edit (after edits)\n'
 }
 
 # ── main ──────────────────────────────────────────────────────────────────────
