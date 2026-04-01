@@ -115,6 +115,25 @@ def cmd_summary(args):
     print(f"    ↳ *{' · '.join(parts)}{suffix}*")
 
 
+def cmd_global_summary(args):
+    data = _load_global()
+    if data["skills_invoked"] == 0:
+        return
+    parts = []
+    if data["functions"] > 0:
+        parts.append(f"{data['functions']} functions")
+    if data["mcp_calls"] > 0:
+        parts.append(f"{data['mcp_calls']} MCP calls")
+    parts.append(f"{data['skills_invoked']} skills")
+    n_projects = len(data.get("projects_seen", []))
+    if n_projects > 0:
+        parts.append(f"{n_projects} project{'s' if n_projects != 1 else ''}")
+    first = data.get("first_recorded", "")
+    since = first[:10] if first else ""
+    suffix = f" since {since}" if since else ""
+    print(f"    ↳ *{' · '.join(parts)}{suffix}*")
+
+
 def main():
     parser = argparse.ArgumentParser(description="LOCI cumulative stats tracker")
     sub = parser.add_subparsers(dest="cmd")
@@ -126,12 +145,15 @@ def main():
     rec.add_argument("--co-reasoning", type=int, default=0)
 
     sub.add_parser("summary")
+    sub.add_parser("global-summary")
 
     args = parser.parse_args()
     if args.cmd == "record":
         cmd_record(args)
     elif args.cmd == "summary":
         cmd_summary(args)
+    elif args.cmd == "global-summary":
+        cmd_global_summary(args)
 
 
 if __name__ == "__main__":

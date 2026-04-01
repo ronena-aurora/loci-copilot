@@ -298,7 +298,7 @@ _first_time_setup >&2      # setup logs go to stderr (not parsed as hook output)
 _detect_and_write_context
 
 # Build additionalContext for Claude (invisible to user, injected into session)
-CONTEXT=$(printf 'Target: %s, Compiler: %s, Build: %s\nLOCI target: %s\nBranch: %s\nAvailable: /exec-trace, /stack-depth, /memory-report, /control-flow\nAuto-runs: loci-preflight (in /plan), loci-post-edit (after edits)' \
+CONTEXT=$(printf 'Target: %s, Compiler: %s, Build: %s\nLOCI target: %s\nBranch: %s\nAvailable: /help, /exec-trace, /stack-depth, /memory-report, /control-flow\nAuto-runs: loci-preflight (in /plan), loci-post-edit (after edits)' \
     "$_CTX_TARGET" "$_CTX_COMPILER" "$_CTX_BUILD" "$_CTX_TARGET" "$_CTX_BRANCH")
 
 # Build visible welcome for user (one-time)
