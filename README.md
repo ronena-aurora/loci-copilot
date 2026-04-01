@@ -1,12 +1,12 @@
-# loci-plugin
+# loci
 
-A Claude Code plugin with safety analysis skills and file instrumentation for C/C++ development.
+Execution-aware analysis for C/C++/Rust — hardware-grounded timing, energy, stack depth, memory, and security from compiled binaries. Real silicon traces, not simulated.
 
 ## Install
 
 ```
 /plugin marketplace add auroralabs-loci/loci-plugin-2
-/plugin install loci-plugin@loci-plugin
+/plugin install loci@loci
 ```
 
 ## Skills
