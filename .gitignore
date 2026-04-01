@@ -1,5 +1,5 @@
 # Runtime state and logs
-loci-plugin/state/
+loci/state/
 state/
 .loci-build/
 *.log
