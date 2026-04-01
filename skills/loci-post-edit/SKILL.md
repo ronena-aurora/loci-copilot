@@ -130,7 +130,7 @@ the calls for extracting fields from the json output:
 
 ## Step 4: LOCI MCP timing — compute % diff
 
-Call `mcp__loci-plugin__get_assembly_block_exec_behavior` for **all chunks in
+Call `mcp__loci__get_assembly_block_exec_behavior` for **all chunks in
 parallel** (one call per chunk, all in the same response):
 - `csv_text`: the chunk
 - `architecture`: the `timing_architecture` value from step 3
@@ -262,6 +262,6 @@ last thing printed — **only if N > 0**. If no functions were processed, do NOT
 ```
 
 - **N** = unique functions (modified + added) whose assembly was sent to LOCI
-- **M** = MCP calls to `mcp__loci-plugin__get_assembly_block_exec_behavior` (exec-behaviors)
+- **M** = MCP calls to `mcp__loci__get_assembly_block_exec_behavior` (exec-behaviors)
   (typically 2 for modified functions: pre + post; 1 for added functions)
 - **R** = reasoning cycles (one per function that has a Reasoning section)

@@ -118,8 +118,8 @@ RESULTS_DIR="$SCRIPT_DIR/eval-results/$TIMESTAMP"
 mkdir -p "$RESULTS_DIR"
 
 MCP_CONFIG=""
-PLUGIN_MCP_JSON="$(find ~/.claude/plugins/cache/loci-plugin -name marketplace.json 2>/dev/null | sort -V | tail -1)"
-[[ -z "$PLUGIN_MCP_JSON" ]] && PLUGIN_MCP_JSON="$(find ~/.claude/plugins/cache/loci-plugin -name plugin.json 2>/dev/null | sort -V | tail -1)"
+PLUGIN_MCP_JSON="$(find ~/.claude/plugins/cache/loci -name marketplace.json 2>/dev/null | sort -V | tail -1)"
+[[ -z "$PLUGIN_MCP_JSON" ]] && PLUGIN_MCP_JSON="$(find ~/.claude/plugins/cache/loci -name plugin.json 2>/dev/null | sort -V | tail -1)"
 if [[ -n "${LOCI_MCP_TOKEN:-}" ]]; then
   MCP_CONFIG="$RESULTS_DIR/.mcp-config.json"
   cat > "$MCP_CONFIG" <<EOF

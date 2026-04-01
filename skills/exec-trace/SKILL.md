@@ -67,7 +67,7 @@ If no `.o` exists yet, fall through to full compilation.
    <asm-analyze-cmd> extract-assembly --elf-path <binary> --functions <func> --blocks blocks.csv
    ```
    The JSON output contains `timing_csv_chunks` (list of per-block CSV chunks like `calculate_0x718,...`) and `timing_architecture`.
-3. Call `mcp__loci-plugin__get_assembly_block_exec_behavior` for **all chunks
+3. Call `mcp__loci__get_assembly_block_exec_behavior` for **all chunks
    in parallel** (one call per chunk, all in the same response):
    - `csv_text`: the chunk
    - `architecture`: the `timing_architecture` value from step 2's JSON output
@@ -93,5 +93,5 @@ After reporting timing results, append this footer as the last thing printed —
 ```
 
 - **N** = unique functions whose assembly was sent to LOCI
-- **M** = MCP calls to `mcp__loci-plugin__get_assembly_block_exec_behavior` (exec-behaviors)
+- **M** = MCP calls to `mcp__loci__get_assembly_block_exec_behavior` (exec-behaviors)
 

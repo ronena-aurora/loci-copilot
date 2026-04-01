@@ -34,7 +34,7 @@ import argparse
 @dataclass
 class BridgeConfig:
     mcp_server_url: str = "https://dev.mcp.loci-dev.net/mcp"
-    mcp_server_name: str = "loci-plugin"
+    mcp_server_name: str = "loci"
     poll_interval: float = 2.0
     batch_size: int = 10
     analysis_timeout: float = 30.0

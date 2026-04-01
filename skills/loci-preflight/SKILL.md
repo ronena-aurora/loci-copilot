@@ -180,7 +180,7 @@ the calls for extracting fields from the json output:
 Immediately after extraction, get hardware-accurate timing and energy for the
 callees:
 
-Call `mcp__loci-plugin__get_assembly_block_exec_behavior` for **all chunks in
+Call `mcp__loci__get_assembly_block_exec_behavior` for **all chunks in
 parallel** (one call per chunk, all in the same response):
 - `csv_text`: the chunk
 - `architecture`: the `timing_architecture` field from the output above
@@ -385,7 +385,7 @@ If no functions were processed (MCP unavailable or no callees to measure), do NO
 ```
 
 - **N** = unique callee functions whose assembly was sent to LOCI
-- **M** = MCP calls to `mcp__loci-plugin__get_assembly_block_exec_behavior` (exec-behaviors)
+- **M** = MCP calls to `mcp__loci__get_assembly_block_exec_behavior` (exec-behaviors)
 - **R** = reasoning cycles: 1 for the initial LOCI result pass, +1 for each
   re-query loop iteration, +2 for each escalated skill (stack-depth,
   memory-report) — 1 at trigger, 1 when reasoning over results

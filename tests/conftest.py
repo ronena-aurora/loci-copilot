@@ -46,7 +46,7 @@ def pytest_addoption(parser):
 # ---------------------------------------------------------------------------
 @pytest.fixture(scope="session")
 def plugin_root():
-    """Absolute path to the loci-plugin root directory."""
+    """Absolute path to the loci root directory."""
     return _PLUGIN_ROOT
 
 
