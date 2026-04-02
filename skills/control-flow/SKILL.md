@@ -6,7 +6,10 @@ disable-model-invocation: true
 
 # LOCI Control Flow Analysis
 
-Use the asm-analyze command from the LOCI session context (shown at session start as `asm-analyze command: <path>`).
+Read these values from the LOCI session context (system-reminder block at session start) and substitute them wherever the placeholders appear below:
+- `asm-analyze command: <path>` → use as `<asm-analyze-cmd>`
+- `venv python: <path>` → use as `<venv-python>`
+- `plugin dir: <path>` → use as `<plugin-dir>`
 
 For example, to generate annotated CFG for a function called `apply_filter` from `filter.elf`:
 ```

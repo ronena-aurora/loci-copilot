@@ -203,11 +203,19 @@ _first_time_setup() {
     local ver; ver=$(_plugin_version "$JQ")
     [ -f "$SETUP_MARKER" ] && [ "$(cat "$SETUP_MARKER" 2>/dev/null)" = "$ver" ] && return 0
 
-    # Simple mkdir lock prevents parallel sessions from corrupting the venv
+    # mkdir lock prevents parallel sessions from corrupting the venv.
+    # PID file inside the lock dir enables stale-lock cleanup after a crash.
     local lock="${PLUGIN_DIR}/.setup-lock"
+    if [ -d "$lock" ]; then
+        local lpid; lpid=$(cat "${lock}/pid" 2>/dev/null || echo "")
+        if [ -z "$lpid" ] || ! kill -0 "$lpid" 2>/dev/null; then
+            rm -rf "$lock" 2>/dev/null      # stale lock — owner process gone
+        fi
+    fi
     mkdir "$lock" 2>/dev/null || return 0     # another instance is setting up
+    echo $$ > "${lock}/pid" 2>/dev/null
     # shellcheck disable=SC2064
-    trap "rmdir '$lock' 2>/dev/null" EXIT
+    trap "rm -rf '$lock' 2>/dev/null" EXIT
 
     printf 'LOCI: first-time setup (v%s)...\n' "$ver"
 
@@ -231,14 +239,14 @@ _first_time_setup() {
         else
             printf 'LOCI: asm-analyze unavailable (will retry next session)\n'
             # Don't write marker — retry on next session
-            rmdir "$lock" 2>/dev/null; trap - EXIT
+            rm -rf "$lock" 2>/dev/null; trap - EXIT
             return 0
         fi
     fi
 
     echo "$ver" > "$SETUP_MARKER"
     printf 'LOCI: setup complete\n'
-    rmdir "$lock" 2>/dev/null; trap - EXIT
+    rm -rf "$lock" 2>/dev/null; trap - EXIT
 }
 
 _welcome_text() {
@@ -298,6 +306,17 @@ _detect_and_write_context() {
 _first_time_setup >&2      # setup logs go to stderr (not parsed as hook output)
 _detect_and_write_context
 
+# Resolve asm-analyze command for session context (skills use <asm-analyze-cmd>, <venv-python>, <plugin-dir>)
+_VENV_PY=""
+if   [ -x "${VENV_DIR}/bin/python" ];         then _VENV_PY="${VENV_DIR}/bin/python"
+elif [ -x "${VENV_DIR}/Scripts/python.exe" ]; then _VENV_PY="${VENV_DIR}/Scripts/python.exe"
+fi
+_ASM_ANALYZE_CMD=""
+# Only advertise asm-analyze when the setup marker confirms a completed install
+if [ -n "$_VENV_PY" ] && [ -f "$SETUP_MARKER" ]; then
+    _ASM_ANALYZE_CMD="${_VENV_PY} ${PLUGIN_DIR}/lib/asm_analyze.py"
+fi
+
 # Build additionalContext for Claude (invisible to user, injected into session)
 LOCI_VOICE='LOCI voice: When presenting LOCI analysis results, adopt Aurora Labs "Proof, Not Promises" tone — numerically specific, technically confident, peer-to-peer. Add one short remark per report (max 15 words) that acknowledges the user'\''s work grounded in actual data. LOCI is a buddy that notices good engineering and flags real concerns honestly.
 Positive feedback (attribute results to the user'\''s work):
@@ -315,8 +334,15 @@ Neutral (when results are baseline or first measurement):
 - "First measurement recorded — this is your baseline."
 Rules: Always cite numbers. Never use emoji. Never be vague ("looks good" without data). Attribute improvements to the user. Skip the remark when results are complex or the user needs raw data only. This is a presentation tone, not a persona — do not roleplay.'
 
-CONTEXT=$(printf 'Target: %s, Compiler: %s, Build: %s\nLOCI target: %s\nBranch: %s\nAvailable: /help, /exec-trace, /stack-depth, /memory-report, /control-flow\nAuto-runs: loci-preflight (in /plan), loci-post-edit (after edits)\n%s' \
-    "$_CTX_TARGET" "$_CTX_COMPILER" "$_CTX_BUILD" "$_CTX_TARGET" "$_CTX_BRANCH" "$LOCI_VOICE")
+if [ -n "$_ASM_ANALYZE_CMD" ]; then
+    CONTEXT=$(printf 'Target: %s, Compiler: %s, Build: %s\nLOCI target: %s\nBranch: %s\nasm-analyze command: %s\nvenv python: %s\nplugin dir: %s\nAvailable: /help, /exec-trace, /stack-depth, /memory-report, /control-flow\nAuto-runs: loci-preflight (in /plan), loci-post-edit (after edits)\n%s' \
+        "$_CTX_TARGET" "$_CTX_COMPILER" "$_CTX_BUILD" "$_CTX_TARGET" "$_CTX_BRANCH" \
+        "$_ASM_ANALYZE_CMD" "$_VENV_PY" "$PLUGIN_DIR" "$LOCI_VOICE")
+else
+    CONTEXT=$(printf 'Target: %s, Compiler: %s, Build: %s\nLOCI target: %s\nBranch: %s\nasm-analyze: unavailable (first-time setup running — restart after ~60 s)\nvenv python: unavailable\nplugin dir: %s\nAvailable: /help, /exec-trace, /stack-depth, /memory-report, /control-flow\nAuto-runs: loci-preflight (in /plan), loci-post-edit (after edits)\n%s' \
+        "$_CTX_TARGET" "$_CTX_COMPILER" "$_CTX_BUILD" "$_CTX_TARGET" "$_CTX_BRANCH" \
+        "$PLUGIN_DIR" "$LOCI_VOICE")
+fi
 
 # Build visible welcome for user (one-time)
 WELCOME=$(_welcome_text)

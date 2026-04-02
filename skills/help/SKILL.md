@@ -21,7 +21,13 @@ session start:
 ```
 Target: <target>, Compiler: <compiler>, Build: <build>
 LOCI target: <loci_target>
+asm-analyze command: <path>   ← absent when venv not ready
+venv python: <path>
+plugin dir: <path>
 ```
+
+Capture `venv python: <path>` as `<venv-python>` and `plugin dir: <path>` as
+`<plugin-dir>` — needed for the Stats Footer below.
 
 Classify the environment into one of three states:
 

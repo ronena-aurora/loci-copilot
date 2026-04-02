@@ -11,8 +11,10 @@ when_to_use: >
 
 # LOCI Memory Report
 
-Use the asm-analyze command which is a python script from lib/asm_analyze.py
-in the plugin dir, also use the python version from .venv folder in the plugin dir.
+Read these values from the LOCI session context (system-reminder block at session start) and substitute them wherever the placeholders appear below:
+- `asm-analyze command: <path>` → use as `<asm-analyze-cmd>`
+- `venv python: <path>` → use as `<venv-python>`
+- `plugin dir: <path>` → use as `<plugin-dir>`
 
 ## Step 0: Check Session Context
 

@@ -89,8 +89,7 @@ absolute timing only — no % diff.
 
 ## Step 2: diff-elfs — find modified/added functions
 
-Use the asm-analyze command, which is a python script from lib/asm_analyze.py in the plugin dir.
-Use the python version from .venv folder in the plugin dir for running python scripts.
+Read `asm-analyze command:`, `venv python:`, and `plugin dir:` from the LOCI session context (system-reminder at session start). Use these as `<asm-analyze-cmd>`, `<venv-python>`, and `<plugin-dir>` in the commands below.
 
 ```
 <asm-analyze-cmd> diff-elfs --elf-path <pre.o> --comparing-elf-path <post.o> --arch <loci_target>

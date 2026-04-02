@@ -11,7 +11,10 @@ when_to_use: >
 
 # LOCI Stack Depth Analysis
 
-Use the asm-analyze command which is a python script from lib/asm_analyze.py in the plugin dir, also use the python version from .venv folder in the plugin dir.
+Read these values from the LOCI session context (system-reminder block at session start) and substitute them wherever the placeholders appear below:
+- `asm-analyze command: <path>` → use as `<asm-analyze-cmd>`
+- `venv python: <path>` → use as `<venv-python>`
+- `plugin dir: <path>` → use as `<plugin-dir>`
 
 The practical workflow is: use `.o` for fast incremental checks on individual files
 (did my change increase the frame?), use the linked ELF for full worst-case depth.
