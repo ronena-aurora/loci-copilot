@@ -335,11 +335,11 @@ Neutral (when results are baseline or first measurement):
 Rules: Always cite numbers. Never use emoji. Never be vague ("looks good" without data). Attribute improvements to the user. Skip the remark when results are complex or the user needs raw data only. This is a presentation tone, not a persona — do not roleplay.'
 
 if [ -n "$_ASM_ANALYZE_CMD" ]; then
-    CONTEXT=$(printf 'Target: %s, Compiler: %s, Build: %s\nLOCI target: %s\nBranch: %s\nasm-analyze command: %s\nvenv python: %s\nplugin dir: %s\nAvailable: /help, /exec-trace, /stack-depth, /memory-report, /control-flow\nAuto-runs: loci-preflight (in /plan), loci-post-edit (after edits)\n%s' \
+    CONTEXT=$(printf 'Target: %s, Compiler: %s, Build: %s\nLOCI target: %s\nBranch: %s\nasm-analyze command: %s\nvenv python: %s\nplugin dir: %s\nAvailable: /help, /exec-trace, /stack-depth, /memory-report, /control-flow, /bug-report\nAuto-runs: loci-preflight (in /plan), loci-post-edit (after edits)\n%s' \
         "$_CTX_TARGET" "$_CTX_COMPILER" "$_CTX_BUILD" "$_CTX_TARGET" "$_CTX_BRANCH" \
         "$_ASM_ANALYZE_CMD" "$_VENV_PY" "$PLUGIN_DIR" "$LOCI_VOICE")
 else
-    CONTEXT=$(printf 'Target: %s, Compiler: %s, Build: %s\nLOCI target: %s\nBranch: %s\nasm-analyze: unavailable (first-time setup running — restart after ~60 s)\nvenv python: unavailable\nplugin dir: %s\nAvailable: /help, /exec-trace, /stack-depth, /memory-report, /control-flow\nAuto-runs: loci-preflight (in /plan), loci-post-edit (after edits)\n%s' \
+    CONTEXT=$(printf 'Target: %s, Compiler: %s, Build: %s\nLOCI target: %s\nBranch: %s\nasm-analyze: unavailable (first-time setup running — restart after ~60 s)\nvenv python: unavailable\nplugin dir: %s\nAvailable: /help, /exec-trace, /stack-depth, /memory-report, /control-flow, /bug-report\nAuto-runs: loci-preflight (in /plan), loci-post-edit (after edits)\n%s' \
         "$_CTX_TARGET" "$_CTX_COMPILER" "$_CTX_BUILD" "$_CTX_TARGET" "$_CTX_BRANCH" \
         "$PLUGIN_DIR" "$LOCI_VOICE")
 fi
