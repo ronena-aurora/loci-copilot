@@ -3,8 +3,13 @@
 
 import argparse
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
+
+# Ensure Unicode output works on Windows consoles (cp1252 can't encode ↳ etc.)
+if sys.stdout.encoding and sys.stdout.encoding.lower().replace("-", "") != "utf8":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 PLUGIN_DIR = Path(__file__).resolve().parent.parent
 STATE_DIR = PLUGIN_DIR / "state"
