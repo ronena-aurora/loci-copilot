@@ -211,7 +211,19 @@ install_asm_analyze() {
   export UV_EXTRA_INDEX_URL=""
   export UV_INDEX_URL="https://pypi.org/simple/"
 
+  # (Re)create venv if missing or wrong Python version
+  local _need_venv=false
   if [ ! -d "$VENV_DIR" ]; then
+    _need_venv=true
+  else
+    local _pyver; _pyver=$("$(_venv_python)" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null)
+    if [ "$_pyver" != "3.12" ]; then
+      printf 'LOCI: venv has Python %s (need 3.12) — rebuilding...\n' "${_pyver:-unknown}" >> "$ASM_ANALYZE_LOG"
+      rm -rf "$VENV_DIR"
+      _need_venv=true
+    fi
+  fi
+  if $_need_venv; then
     uv venv --python 3.12 "$VENV_DIR" >> "$ASM_ANALYZE_LOG" 2>&1 || return 1
   fi
 

@@ -156,10 +156,17 @@ _install_uv() {
 }
 
 _setup_venv() {
-    # Fast-path: venv already valid?
+    # Fast-path: venv already valid AND running Python 3.12?
     local vpy; vpy=$(_venv_python)
-    [ -x "$vpy" ] && "$vpy" -c "from loci.service.asmslicer import asmslicer" 2>/dev/null \
-        && return 0
+    if [ -x "$vpy" ]; then
+        local _pyver; _pyver=$("$vpy" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null)
+        if [ "$_pyver" = "3.12" ] \
+            && "$vpy" -c "from loci.service.asmslicer import asmslicer" 2>/dev/null; then
+            return 0
+        fi
+        # Wrong Python version or missing deps — nuke and rebuild
+        printf 'LOCI: venv has Python %s (need 3.12) — rebuilding...\n' "${_pyver:-unknown}" >&2
+    fi
 
     printf 'LOCI: setting up asm-analyze environment...\n'
 
