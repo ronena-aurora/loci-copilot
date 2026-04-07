@@ -20,7 +20,7 @@ def _stats_path() -> Path | None:
     ctx_file = STATE_DIR / "project-context.json"
     if not ctx_file.exists():
         return None
-    with open(ctx_file) as f:
+    with open(ctx_file, encoding="utf-8") as f:
         ctx = json.load(f)
     cwd_hash = ctx.get("cwd_hash", "default")
     slug = ctx.get("branch_slug", "unknown")
@@ -29,7 +29,7 @@ def _stats_path() -> Path | None:
 
 def _load(path: Path) -> dict:
     if path and path.exists():
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             return json.load(f)
     return {
         "functions": 0,
@@ -50,7 +50,7 @@ def _global_stats_path() -> Path:
 def _load_global() -> dict:
     path = _global_stats_path()
     if path.exists():
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             return json.load(f)
     return {
         "functions": 0,
@@ -73,12 +73,12 @@ def _update_global(args):
     data["last_recorded"] = datetime.now(timezone.utc).isoformat()
     ctx_file = STATE_DIR / "project-context.json"
     if ctx_file.exists():
-        with open(ctx_file) as f:
+        with open(ctx_file, encoding="utf-8") as f:
             ctx = json.load(f)
         project = ctx.get("project_root", "unknown")
         if project not in data["projects_seen"]:
             data["projects_seen"].append(project)
-    with open(_global_stats_path(), "w") as f:
+    with open(_global_stats_path(), "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
 
@@ -94,10 +94,10 @@ def cmd_record(args):
     data["last_recorded"] = datetime.now(timezone.utc).isoformat()
     ctx_file = STATE_DIR / "project-context.json"
     if ctx_file.exists():
-        with open(ctx_file) as f:
+        with open(ctx_file, encoding="utf-8") as f:
             ctx = json.load(f)
         data["branch"] = ctx.get("git_branch", "unknown")
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
     _update_global(args)
 

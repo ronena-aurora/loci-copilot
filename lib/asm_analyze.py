@@ -99,12 +99,18 @@ import re
 import tempfile
 import traceback
 
+# Ensure Unicode output works on Windows consoles (cp1252 can't encode → etc.)
+if sys.stdout.encoding and sys.stdout.encoding.lower().replace("-", "") != "utf8":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if sys.stderr.encoding and sys.stderr.encoding.lower().replace("-", "") != "utf8":
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 # Prepend the cxxfilt_dir detected by setup.sh (written to state/loci-paths.json).
 # This ensures the GNU c++filt (which supports -r) is found before any
 # system-installed version that may not (e.g. Apple's /usr/bin/c++filt).
 _PATHS_FILE = _PLUGIN_DIR / "state" / "loci-paths.json"
 try:
-    _loci_paths = json.loads(_PATHS_FILE.read_text())
+    _loci_paths = json.loads(_PATHS_FILE.read_text(encoding="utf-8"))
     _cxxfilt_dir = _loci_paths.get("cxxfilt_dir", "")
     if _cxxfilt_dir and _cxxfilt_dir not in os.environ.get("PATH", ""):
         os.environ["PATH"] = _cxxfilt_dir + os.pathsep + os.environ.get("PATH", "")
@@ -215,7 +221,7 @@ def run_analysis(elf_path: str, architecture: str | None = None) -> dict:
         files = {}
         for f in Path(tmpdir).iterdir():
             if f.is_file():
-                files[_file_key(f)] = f.read_text()
+                files[_file_key(f)] = f.read_text(encoding="utf-8")
 
         # Detect architecture from elfinfo if not specified
         detected_arch = architecture
@@ -472,7 +478,7 @@ def extract_assembly(elf_path: str, functions: list[str] | None = None,
     # Write blocks CSV to file if requested
     blocks_text = files.get("blocks", "")
     if blocks_file and blocks_text:
-        Path(blocks_file).write_text(blocks_text)
+        Path(blocks_file).write_text(blocks_text, encoding="utf-8")
 
     # Build output
     functions_out = {}
@@ -568,7 +574,7 @@ def diff_elfs(elf_path: str, comparing_elf_path: str,
         files = {}
         for f in Path(tmpdir).iterdir():
             if f.is_file():
-                files[_file_key(f)] = f.read_text()
+                files[_file_key(f)] = f.read_text(encoding="utf-8")
 
     # Parse diff CSV if available
     diff_text = files.get("diff", "")
@@ -606,7 +612,7 @@ def blocks_to_timing(blocks_file: str,
         print(json.dumps({"error": f"Blocks file not found: {blocks_file}"}))
         sys.exit(1)
 
-    blocks_text = blocks_path.read_text()
+    blocks_text = blocks_path.read_text(encoding="utf-8")
     timing_csv = parse_blocks_to_timing_csv(blocks_text, functions)
     print(timing_csv, end="")
 

@@ -44,7 +44,7 @@ class BridgeConfig:
     def load(cls, config_path: Optional[Path] = None) -> "BridgeConfig":
         cfg = cls()
         if config_path and config_path.exists():
-            with open(config_path) as f:
+            with open(config_path, encoding="utf-8") as f:
                 data = json.load(f)
                 for key, value in data.items():
                     if hasattr(cfg, key) and not key.startswith("_"):
@@ -351,7 +351,7 @@ class LociBridge:
         queue_files = sorted(self.queue_dir.glob("*.json"))[:self.config.batch_size]
         for qf in queue_files:
             try:
-                with open(qf) as f:
+                with open(qf, encoding="utf-8") as f:
                     data = json.load(f)
                 actions.append(EngineeringAction.from_json(data))
                 qf.unlink()
@@ -361,14 +361,14 @@ class LociBridge:
         return actions
 
     def _write_context(self):
-        with open(self.context_file, "w") as f:
+        with open(self.context_file, "w", encoding="utf-8") as f:
             json.dump(self.session_context, f, indent=2)
 
     def _update_warnings(self, new_insights: list[LociInsight]):
         existing = []
         if self.warnings_file.exists():
             try:
-                with open(self.warnings_file) as f:
+                with open(self.warnings_file, encoding="utf-8") as f:
                     data = json.load(f)
                     existing = data.get("warnings", [])
             except Exception:
@@ -394,11 +394,11 @@ class LociBridge:
         self._write_warnings(existing)
 
     def _write_warnings(self, warnings: list):
-        with open(self.warnings_file, "w") as f:
+        with open(self.warnings_file, "w", encoding="utf-8") as f:
             json.dump({"warnings": warnings, "updated_at": datetime.now(timezone.utc).isoformat()}, f, indent=2)
 
     def _write_metrics(self):
-        with open(self.metrics_file, "w") as f:
+        with open(self.metrics_file, "w", encoding="utf-8") as f:
             json.dump(self.metrics, f, indent=2)
 
     def handle_signal(self):

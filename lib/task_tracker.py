@@ -207,7 +207,7 @@ def load_graph_from_log(state_dir: Path, session_id: Optional[str] = None) -> Ex
     if not log_file.exists():
         return graph
 
-    with open(log_file) as f:
+    with open(log_file, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line:
