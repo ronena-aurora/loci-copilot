@@ -119,6 +119,83 @@ except (OSError, json.JSONDecodeError):
 
 import pandas as pd
 
+
+def _diagnose_elf(elf_path: str) -> str:
+    """Inspect an ELF file and return an actionable diagnostic string.
+
+    Only called on error paths when asm-analyze produces no output.
+    Checks for the most common causes in order of likelihood:
+    1. Empty object file (code compiled out by preprocessor conditionals)
+    2. Missing DWARF debug sections (compiled without -g)
+    3. DWARF present but still failing (ELF format / architecture issue)
+    """
+    try:
+        from elftools.elf.elffile import ELFFile
+        from elftools.elf.sections import SymbolTableSection
+    except ImportError:
+        return (
+            "Could not inspect the ELF file (pyelftools not installed). "
+            "Ensure the file was compiled with -g and that all required "
+            "preprocessor defines (-D flags) are present."
+        )
+    try:
+        with open(elf_path, "rb") as f:
+            elf = ELFFile(f)
+
+            # Check 1: Does the file contain any code at all?
+            text_size = 0
+            for section in elf.iter_sections():
+                if section.name == ".text":
+                    text_size = section.data_size
+                    break
+            func_count = 0
+            for section in elf.iter_sections():
+                if isinstance(section, SymbolTableSection):
+                    for sym in section.iter_symbols():
+                        if sym.entry.st_info.type == "STT_FUNC":
+                            func_count += 1
+
+            if text_size == 0 and func_count == 0:
+                return (
+                    "The object file contains no code (empty .text section, "
+                    "0 functions). This usually means the source was compiled "
+                    "out by preprocessor conditionals (#if / #ifdef). Check "
+                    "that the standalone compilation includes all required "
+                    "-D defines from the project build system."
+                )
+
+            # Check 2: Is DWARF debug info present?
+            if not elf.has_dwarf_info(strict=True):
+                if func_count > 0:
+                    return (
+                        f"The object file has {func_count} function(s) but no "
+                        f"DWARF debug sections. Compile with -g to emit debug "
+                        f"info (e.g. <compiler> -g <flags> -c <source> -o "
+                        f"<output>)."
+                    )
+                return (
+                    "No DWARF debug sections found. Ensure the file was "
+                    "compiled with -g."
+                )
+
+            # Check 3: DWARF is present — report version for diagnostics
+            dwarf_info = elf.get_dwarf_info()
+            versions = set()
+            for cu in dwarf_info.iter_CUs():
+                versions.add(cu.header.get("version", 0))
+            ver_str = ", ".join(str(v) for v in sorted(versions)) if versions else "unknown"
+            return (
+                f"DWARF version {ver_str} present, {func_count} function(s) "
+                f"found. The failure may be caused by an unsupported ELF "
+                f"format or architecture."
+            )
+    except Exception as exc:
+        return (
+            f"Could not inspect the ELF file ({type(exc).__name__}: {exc}). "
+            f"Ensure the file was compiled with -g and that all required "
+            f"preprocessor defines (-D flags) are present."
+        )
+
 # ---------------------------------------------------------------------------
 # Architecture mapping to timing backend
 # ---------------------------------------------------------------------------
@@ -390,6 +467,8 @@ def slice_elf(elf_path: str, architecture: str | None = None,
         stem = OUTPUT_TYPE_TO_STEM.get(otype, otype)
         content = files.get(stem)
         if content is None:
+            if otype == "asm":
+                output["asm_diagnostic"] = _diagnose_elf(elf_path)
             output[otype] = None
             continue
 
@@ -430,10 +509,8 @@ def extract_assembly(elf_path: str, functions: list[str] | None = None,
 
     asm_text = files.get("asm")
     if not asm_text:
-        return {"error": "No assembly output produced by asm-analyze. "
-                "The most common cause is missing DWARF debug info — "
-                "ensure the object file was compiled with -g (e.g. "
-                "<compiler> -g <flags> -c <source> -o <output>)."}
+        diag = _diagnose_elf(elf_path)
+        return {"error": f"No assembly output produced by asm-analyze. {diag}"}
 
     all_funcs = parse_functions_from_asm(asm_text)
 
@@ -542,7 +619,8 @@ def extract_symbols(elf_path: str, architecture: str | None = None) -> dict:
 
     symmap_text = files.get("symmap")
     if not symmap_text:
-        return {"error": "No symbol map output produced by asm-analyze"}
+        diag = _diagnose_elf(elf_path)
+        return {"error": f"No symbol map output produced by asm-analyze. {diag}"}
 
     symbols = parse_symbols(symmap_text)
 

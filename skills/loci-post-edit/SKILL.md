@@ -84,6 +84,18 @@ Always include `-g` to emit DWARF debug info (required by asm-analyze):
 <compiler> -g <flags> -c <source> -o <basename>.o
 ```
 
+**Validate the .o after compilation** — a standalone `-c` compile can exit 0
+yet produce an empty object file when the source is wrapped in `#if` / `#ifdef`
+guards whose defines (`-D`) were not on the command line. After compiling, run:
+```
+<asm-analyze-cmd> extract-symbols --elf-path <basename>.o --arch <loci_target>
+```
+If the result shows 0 symbols or returns an error mentioning "no code" or
+"preprocessor", the target function was compiled out. In that case fall back to
+the existing linked binary (`.elf`, `.out`) for analysis instead. If no linked
+binary exists, report that standalone compilation produced an empty object and
+the full project build system is required.
+
 For the pre-edit artifact: the preflight hook saves `<name>.o.prev`
 automatically. If preflight did not run (no `.o.prev`), proceed with
 absolute timing only — no % diff.

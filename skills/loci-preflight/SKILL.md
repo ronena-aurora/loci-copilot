@@ -126,6 +126,15 @@ etc. Use the compiler and target detected in Step 0.
    ```
    <compiler> -g <flags> -c <source> -o <basename>.o
    ```
+3. **Validate the .o** — a standalone `-c` compile can exit 0 yet produce an
+   empty object file when the source is wrapped in `#if` / `#ifdef` guards
+   whose defines (`-D`) were not on the command line. After compiling, run:
+   ```
+   <asm-analyze-cmd> extract-symbols --elf-path <basename>.o --arch <loci_target>
+   ```
+   If the result shows 0 symbols or returns an error mentioning "no code" or
+   "preprocessor", the target function was compiled out. Fall back to the
+   **secondary path** below.
 
 **Secondary path: existing binary**
 
