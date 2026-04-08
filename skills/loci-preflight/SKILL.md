@@ -132,6 +132,12 @@ etc. Use the compiler and target detected in Step 0.
 Use a full binary (.elf, .out) only if the user explicitly provides one or if
 the callees span multiple compilation units and linking is needed.
 
+**Even when using the secondary path, you MUST still compile the source file
+to `.o` with `-c -g` (primary path steps 1–2).** The binary is used for
+*analysis*; the `.o` is required for the *snapshot pipeline* — the PreToolUse
+hook snapshots it as `.o.prev` before each Edit, enabling delta comparison in
+post-edit. Skipping the `.o` compilation breaks the entire pre/post chain.
+
 **Hard stop: no compilation possible**
 
 If there is no binary, no `.o`, and compilation is not possible (missing

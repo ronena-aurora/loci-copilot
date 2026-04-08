@@ -26,6 +26,16 @@
       }
     ],
     "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "VENV_PY=$([ -x \"$CLAUDE_PLUGIN_ROOT/.venv/Scripts/python.exe\" ] && echo \"$CLAUDE_PLUGIN_ROOT/.venv/Scripts/python.exe\" || echo \"$CLAUDE_PLUGIN_ROOT/.venv/bin/python\"); [ -x \"$VENV_PY\" ] && \"$VENV_PY\" \"$CLAUDE_PLUGIN_ROOT/hooks/post_edit_reminder.py\" || true",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   }
 }
