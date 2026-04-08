@@ -5,7 +5,7 @@ Execution-aware analysis for C/C++/Rust — hardware-grounded timing, energy, st
 ## Install
 
 ```
-/plugin marketplace add auroralabs-loci/loci-plugin-2
+/plugin marketplace add auroralabs-loci/loci-claude
 /plugin install loci@loci
 ```
 
