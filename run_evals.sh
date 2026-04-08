@@ -127,7 +127,7 @@ if [[ -n "${LOCI_MCP_TOKEN:-}" ]]; then
   "mcpServers": {
     "loci": {
       "type": "http",
-      "url": "https://dev.local.mcp.loci-dev.net/mcp",
+      "url": "https://loci.auroralabs.com/mcp/v1",
       "headers": { "Authorization": "Bearer ${LOCI_MCP_TOKEN}" }
     }
   }

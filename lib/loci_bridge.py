@@ -2,7 +2,7 @@
 """
 LOCI MCP Bridge - C++ Execution Context Aggregator
 ====================================================
-Works alongside the LOCI MCP server (https://dev.mcp.loci-dev.net/mcp).
+Works alongside the LOCI MCP server (https://loci.auroralabs.com/mcp/v1).
 
 Tailored for C++ engineering workflows:
 - Tracks compilation commands, flags, optimization levels
@@ -33,7 +33,7 @@ import argparse
 
 @dataclass
 class BridgeConfig:
-    mcp_server_url: str = "https://dev.mcp.loci-dev.net/mcp"
+    mcp_server_url: str = "https://loci.auroralabs.com/mcp/v1"
     mcp_server_name: str = "loci"
     poll_interval: float = 2.0
     batch_size: int = 10
