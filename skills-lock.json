@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "skills": {
+    "loci-post-edit": {
+      "source": "ronena-aurora/loci-copilot",
+      "sourceType": "github",
+      "computedHash": "e91c8ca2247616c119b9e47666fe7e6b5c73d58d5f4053639d74459fc514a49c"
+    },
+    "loci-preflight": {
+      "source": "ronena-aurora/loci-copilot",
+      "sourceType": "github",
+      "computedHash": "0294ee8993b4fef0f117ef3afbc92a6544ed1e9edfc19bbe7eee500caf4a3b87"
+    },
+    "memory-report": {
+      "source": "ronena-aurora/loci-copilot",
+      "sourceType": "github",
+      "computedHash": "06535fdda88495a22892bf87e5220df8633d88aa61dd638f4b5b4ea49ab54e13"
+    }
+  }
+}
