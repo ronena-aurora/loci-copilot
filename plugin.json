@@ -1,0 +1,6 @@
+{
+    "name": "Loci Plugin",
+    "description": "A plugin for integrating Loci functionality",
+    "repository": "https://github.com/ronena-aurora/loci-copilot",
+    "mcpServers": "./.mcp.json"
+}
