@@ -1,8 +1,0 @@
- {
-    "mcpServers": {
-        "loci": {
-          "type": "http",
-          "url": "https://dev.local.mcp.loci-dev.net/mcp/v1"
-        }
-      }
- }

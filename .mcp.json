@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "loci": {
+      "type": "http",
+      "url": "https://dev.local.mcp.loci-dev.net/mcp/v1",
+      "description": "Hardware-grounded timing, energy, and execution analysis from real silicon traces"
+    }
+  }
+}

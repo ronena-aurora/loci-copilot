@@ -5,6 +5,8 @@
     "name": "AuroraLabs Ltd",
     "email": "loci@auroralabs.com"
   },
+  "license": "Proprietary",
+  "homepage": "https://github.com/ronena-aurora/loci-copilot",
   "forceRemoveDeletedPlugins": true,
   "metadata": {
     "description": "Execution-aware analysis for C/C++/Rust — hardware-grounded timing, energy, stack depth, memory, and security from compiled binaries. Real silicon traces, not simulated."

@@ -1,6 +1,13 @@
 {
-    "name": "Loci Plugin",
-    "description": "A plugin for integrating Loci functionality",
-    "repository": "https://github.com/ronena-aurora/loci-copilot",
-    "mcpServers": "./.mcp.json"
+    "name": "loci-copilot",
+    "displayName": "LOCI — Embedded Execution Analysis",
+    "version": "1.0.0",
+    "publisher": "auroralabs",
+    "description": "Execution-aware analysis for C/C++/Rust — hardware-grounded timing, energy, stack depth, memory, and security from compiled binaries. Real silicon traces, not simulated.",
+    "license": "Proprietary",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/ronena-aurora/loci-copilot"
+    },
+    "mcpServers": "../.mcp.json"
 }
