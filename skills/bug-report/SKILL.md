@@ -264,13 +264,27 @@ Generated: <YYYY-MM-DD HH:MM:SS UTC>
 ### Global stats
 <loci_stats.py global-summary output, or "no stats recorded">
 
+### Redaction
+
+Before embedding any file contents in the Raw Data section below, sanitize
+them:
+
+1. **Secrets** — replace values matching common secret patterns (API keys,
+   tokens, passwords, `Bearer ...`, `Authorization: ...`, private key blocks)
+   with `[REDACTED]`.
+2. **Home paths** — replace the user's home directory prefix
+   (`/Users/<name>/`, `/home/<name>/`, `C:\Users\<name>\`) with `~/`.
+
+Apply these substitutions in-memory before writing the report. Do NOT write
+unsanitized contents and edit afterward.
+
 ## Raw Data
 
 <details>
 <summary>project-context.json</summary>
 
 ```json
-<full contents or "MISSING">
+<sanitized contents or "MISSING">
 ```
 </details>
 
@@ -278,7 +292,7 @@ Generated: <YYYY-MM-DD HH:MM:SS UTC>
 <summary>loci-paths.json</summary>
 
 ```json
-<full contents or "MISSING">
+<sanitized contents or "MISSING">
 ```
 </details>
 
@@ -286,14 +300,14 @@ Generated: <YYYY-MM-DD HH:MM:SS UTC>
 <summary>hooks.json</summary>
 
 ```json
-<full contents or "MISSING">
+<sanitized contents or "MISSING">
 ```
 </details>
 
 <details>
 <summary>.setup-complete</summary>
 
-<contents or "MISSING">
+<sanitized contents or "MISSING">
 </details>
 
 <details>
