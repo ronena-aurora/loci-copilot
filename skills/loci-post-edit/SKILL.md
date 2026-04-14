@@ -279,16 +279,36 @@ last thing printed — **only if N > 0**. If no functions were processed, do NOT
 <venv-python> <plugin-dir>/lib/loci_stats.py record --skill post-edit --functions <N> --mcp-calls <M> --co-reasoning <R>
 ```
 
+**Record per-function measurements** (single Bash call for all functions).
+Capture the commit hash once, then pipe all measurements as JSONL via stdin.
+Skip functions where MCP timing was unavailable.
+```
+COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)
+echo '<jsonl_records>' | <venv-python> <plugin-dir>/lib/loci_stats.py record-measurement --stdin --skill post-edit --commit "$COMMIT"
+```
+Where `<jsonl_records>` is one JSON object per line for each modified/added
+function with post-edit timing values:
+```
+{"fn":"<func1>","worst_ns":<W>,"happy_ns":<H>,"energy_uws":<E>,"src":"<source_file>"}
+{"fn":"<func2>","worst_ns":<W>,"happy_ns":<H>,"energy_uws":<E>,"src":"<source_file>"}
+```
+
+**Read trend lines** (single Bash call for all functions; capture output):
+```
+<venv-python> <plugin-dir>/lib/loci_stats.py trend-line --function <func1>,<func2>,...
+```
+
 **Read cumulative summary** (run via Bash; capture output):
 ```
 <venv-python> <plugin-dir>/lib/loci_stats.py summary
 ```
 
-Render the footer — include the summary line only if the command produced output:
+Render the footer — include the summary and trend lines only if the commands produced output:
 ```
 ─── LOCI · post-edit ───────────────────
   <N> functions · <M> MCP calls · <R> co-reasoning
   Verdict: <OK | CAUTION | FLAG> — <one-line summary>
+    ↳ trend: <trend-line-output>       ← omit if empty (one line per function)
     <cumulative-summary-output>        ← omit if empty
 ────────────────────────────────────────
 ```

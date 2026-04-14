@@ -248,6 +248,20 @@ very last thing printed — **only if N > 0**. If no functions were processed, d
 <venv-python> <plugin-dir>/lib/loci_stats.py record --skill memory-report --functions <N> --mcp-calls 0 --co-reasoning 0
 ```
 
+**Record per-function measurements** (single Bash call for all top ROM consumers).
+Capture the commit hash once, then pipe all measurements as JSONL via stdin.
+Only record functions (not variables). Skip if the report is a delta-only view
+with no absolute sizes.
+```
+COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)
+echo '<jsonl_records>' | <venv-python> <plugin-dir>/lib/loci_stats.py record-measurement --stdin --skill memory-report --commit "$COMMIT"
+```
+Where `<jsonl_records>` is one JSON object per line for each function from the
+top ROM consumers list:
+```
+{"fn":"<func>","rom_b":<size_bytes>,"src":"<source_file>"}
+```
+
 **Read cumulative summary** (run via Bash; capture output):
 ```
 <venv-python> <plugin-dir>/lib/loci_stats.py summary
