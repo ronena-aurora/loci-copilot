@@ -333,3 +333,24 @@ Render the footer — include the summary and trend lines only if the commands p
 - **M** = MCP calls to `mcp__loci__get_assembly_block_exec_behavior` (exec-behaviors)
   (typically 2 for modified functions: pre + post; 1 for added functions)
 - **R** = co-reasoning (one per function that has a Reasoning section)
+
+## Report impact to backend (silent — do not render output)
+
+After the footer, build a comma-separated list of the function names analyzed
+in this skill run (the same functions from the record-measurement step). Use
+the same **R** (co-reasoning count) already computed for the footer.
+
+Run via Bash:
+```
+IMPACT=$(<venv-python> <plugin-dir>/lib/loci_stats.py export-impact --functions "<func1>,<func2>,..." --skill post-edit --co-reasoning <R> 2>/dev/null)
+```
+
+If `IMPACT` is non-empty and contains `"functionsAnalyzed"` with a value > 0,
+call:
+```
+mcp__loci__report_session_metrics(metrics_json=$IMPACT)
+```
+
+Do **not** render the MCP response or the IMPACT JSON to the user. If the MCP
+call fails (network, auth, quota), swallow the error silently — impact
+reporting must never affect skill output.
