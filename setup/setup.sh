@@ -188,7 +188,6 @@ echo -e "${GREEN}OK${NC}"
 
 # 4. Set up asm-analyze environment
 VENV_DIR="${PLUGIN_DIR}/.venv"
-WHEEL_DIR="${PLUGIN_DIR}/asm-analyze-wheels"
 ASM_ANALYZE_AVAILABLE=false
 ASM_ANALYZE_LOG="$(mktemp)"
 
@@ -207,7 +206,7 @@ install_asm_analyze() {
   : > "$ASM_ANALYZE_LOG"
 
   # Neutralize any globally-configured private package registries (e.g. GCP Artifact Registry)
-  # that would block waiting for credentials. All deps come from the local wheel or PyPI.
+  # that would block waiting for credentials. All deps come from PyPI.
   export UV_EXTRA_INDEX_URL=""
   export UV_INDEX_URL="https://pypi.org/simple/"
 
@@ -227,7 +226,7 @@ install_asm_analyze() {
     uv venv --python 3.12 "$VENV_DIR" >> "$ASM_ANALYZE_LOG" 2>&1 || return 1
   fi
 
-  VIRTUAL_ENV="$VENV_DIR" uv pip install loci_service_asmslicer --find-links "${WHEEL_DIR}" >> "$ASM_ANALYZE_LOG" 2>&1 || return 1
+  VIRTUAL_ENV="$VENV_DIR" uv pip install loci_service_asmslicer >> "$ASM_ANALYZE_LOG" 2>&1 || return 1
   VIRTUAL_ENV="$VENV_DIR" uv pip install unicorn pandas pydot >> "$ASM_ANALYZE_LOG" 2>&1 || true
 
   # The wheel may have undeclared dependencies — detect and install them.
@@ -264,45 +263,29 @@ install_asm_analyze() {
 }
 
 echo -n "Setting up asm-analyze environment... "
-if ls "${WHEEL_DIR}"/*.whl 1>/dev/null 2>&1; then
-  # Fast-path: skip install if venv already works for current wheel
-  # Cross-platform wheel hash: md5sum on Linux/WSL, md5 on macOS
-  if command -v md5sum >/dev/null 2>&1; then
-    WHEEL_HASH=$(md5sum "${WHEEL_DIR}"/*.whl | awk '{print $1}' | sort | tr -d '\n')
-  elif command -v md5 >/dev/null 2>&1; then
-    WHEEL_HASH=$(md5 -q "${WHEEL_DIR}"/*.whl 2>/dev/null | tr -d '\n')
-  else
-    WHEEL_HASH=""
-  fi
-  MARKER_FILE="${VENV_DIR}/.loci-wheel-hash"
-  # Cache hit requires: wheel hash match + correct Python version + working import
-  CACHED_PYVER=$("$(_venv_python)" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null)
-  if [ -f "$MARKER_FILE" ] && [ "$(cat "$MARKER_FILE" 2>/dev/null)" = "$WHEEL_HASH" ] \
-      && [ "$CACHED_PYVER" = "3.12" ] \
-      && "$(_venv_python)" -c "from loci.service.asmslicer import asmslicer" 2>/dev/null; then
+# Fast-path: skip install if venv already works with correct Python version
+CACHED_PYVER=$("$(_venv_python)" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null)
+if [ "$CACHED_PYVER" = "3.12" ] \
+    && "$(_venv_python)" -c "from loci.service.asmslicer import asmslicer" 2>/dev/null; then
+  ASM_ANALYZE_AVAILABLE=true
+  echo -e "${GREEN}OK (cached)${NC}"
+elif ! install_asm_analyze; then
+  # Stale or broken venv — nuke and retry once
+  rm -rf "$VENV_DIR"
+  if install_asm_analyze; then
     ASM_ANALYZE_AVAILABLE=true
-    echo -e "${GREEN}OK (cached)${NC}"
-  elif ! install_asm_analyze; then
-    # Stale or broken venv — nuke and retry once
-    rm -rf "$VENV_DIR"
-    if install_asm_analyze; then
-      ASM_ANALYZE_AVAILABLE=true
-      echo -e "${GREEN}OK (rebuilt venv)${NC}"
-    else
-      echo -e "${YELLOW}FAILED${NC}"
-      echo -e "  ${YELLOW}See details: cat \$ASM_ANALYZE_LOG${NC}"
-      LAST_ERR=$(grep -iE '(error|no matching|not a supported|incompatible)' "$ASM_ANALYZE_LOG" | tail -1)
-      if [ -n "$LAST_ERR" ]; then
-        echo -e "  ${YELLOW}${LAST_ERR}${NC}"
-      fi
+    echo -e "${GREEN}OK (rebuilt venv)${NC}"
+  else
+    echo -e "${YELLOW}FAILED${NC}"
+    echo -e "  ${YELLOW}See details: cat \$ASM_ANALYZE_LOG${NC}"
+    LAST_ERR=$(grep -iE '(error|no matching|not a supported|incompatible)' "$ASM_ANALYZE_LOG" | tail -1)
+    if [ -n "$LAST_ERR" ]; then
+      echo -e "  ${YELLOW}${LAST_ERR}${NC}"
     fi
-  else
-    ASM_ANALYZE_AVAILABLE=true
-    echo "$WHEEL_HASH" > "$MARKER_FILE"
-    echo -e "${GREEN}OK${NC}"
   fi
 else
-  echo -e "${YELLOW}no wheels in asm-analyze-wheels/ — asm-analyze disabled${NC}"
+  ASM_ANALYZE_AVAILABLE=true
+  echo -e "${GREEN}OK${NC}"
 fi
 
 # 5. Detect project

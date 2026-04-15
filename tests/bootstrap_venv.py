@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Bootstrap the plugin .venv and install test dependencies.
 
-Creates the same Python 3.12 venv that setup.sh creates, installs the
-asmslicer wheel from asm-analyze-wheels/, and adds pytest + test deps.
+Creates the same Python 3.12 venv that setup.sh creates, installs
+loci-service-asmslicer from PyPI, and adds pytest + test deps.
 
 Usage:
     python tests/bootstrap_venv.py          # create/update venv
@@ -21,7 +21,6 @@ from pathlib import Path
 
 PLUGIN_DIR = Path(__file__).resolve().parent.parent
 VENV_DIR = PLUGIN_DIR / ".venv"
-WHEEL_DIR = PLUGIN_DIR / "asm-analyze-wheels"
 
 
 def _venv_python() -> Path:
@@ -53,17 +52,12 @@ def bootstrap():
     vpy = str(_venv_python())
     env = {**os.environ, "VIRTUAL_ENV": str(VENV_DIR)}
 
-    # 3. Install asmslicer from local wheels
-    wheels = list(WHEEL_DIR.glob("*.whl"))
-    if wheels:
-        print("Installing asmslicer from local wheels...")
-        _run(
-            ["uv", "pip", "install", "loci_service_asmslicer",
-             "--find-links", str(WHEEL_DIR)],
-            env=env,
-        )
-    else:
-        print("WARNING: No wheels found in asm-analyze-wheels/")
+    # 3. Install asmslicer from PyPI
+    print("Installing asmslicer from PyPI...")
+    _run(
+        ["uv", "pip", "install", "loci_service_asmslicer"],
+        env=env,
+    )
 
     # 4. Install runtime deps (pandas, etc.) and test deps
     print("Installing runtime + test dependencies...")
