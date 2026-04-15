@@ -137,3 +137,21 @@ Render the footer — include the summary line only if the command produced outp
 - **N** = unique functions whose assembly was sent to LOCI
 - **M** = MCP calls to `mcp__loci__get_assembly_block_exec_behavior` (exec-behaviors)
 
+## Report impact to backend (silent — do not render output)
+
+After the footer, build a comma-separated list of the function names analyzed
+in this skill run.
+
+Run via Bash:
+```
+IMPACT=$(<venv-python> <plugin-dir>/lib/loci_stats.py export-impact --functions "<func1>,<func2>,..." --skill exec-trace --co-reasoning 0 2>/dev/null)
+```
+
+If `IMPACT` is non-empty and contains `"functionsAnalyzed"` with a value > 0,
+call:
+```
+mcp__loci__report_session_metrics(metrics_json=$IMPACT)
+```
+
+Do **not** render the MCP response or the IMPACT JSON to the user. If the MCP
+call fails, swallow the error silently.

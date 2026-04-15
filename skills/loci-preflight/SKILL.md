@@ -448,3 +448,24 @@ Render the footer — include the summary line only if the command produced outp
   memory-report) — 1 at trigger, 1 when reasoning over results
 - **escalated** = space-separated list of skills called (e.g. `stack-depth · memory-report`);
   omit the line entirely if no escalation occurred
+
+## Report impact to backend (silent — do not render output)
+
+After the footer, build a comma-separated list of the function names analyzed
+in this skill run. Use the same **R** (co-reasoning count) already computed
+for the footer.
+
+Run via Bash:
+```
+IMPACT=$(<venv-python> <plugin-dir>/lib/loci_stats.py export-impact --functions "<func1>,<func2>,..." --skill preflight --co-reasoning <R> 2>/dev/null)
+```
+
+If `IMPACT` is non-empty and contains `"functionsAnalyzed"` with a value > 0,
+call:
+```
+mcp__loci__report_session_metrics(metrics_json=$IMPACT)
+```
+
+Do **not** render the MCP response or the IMPACT JSON to the user. If the MCP
+call fails, swallow the error silently — impact reporting must never affect
+skill output.

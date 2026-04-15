@@ -412,6 +412,86 @@ def cmd_trend_line(args):
             print(line)
 
 
+def cmd_export_impact(args):
+    """Export session-scoped impact metrics as JSON to stdout.
+
+    Scoped to --functions if provided (comma-separated). Uses full measurement
+    history for direction classification but only counts specified functions.
+    """
+    path = _measurements_path()
+    records = _read_measurements(path)
+    if not records:
+        print(json.dumps({"functionsAnalyzed": 0}))
+        return
+
+    # Group by function name
+    by_fn = {}
+    for r in records:
+        fn = r.get("fn", "unknown")
+        by_fn.setdefault(fn, []).append(r)
+
+    # Scope to requested functions if provided
+    if args.functions:
+        scope = {f.strip() for f in args.functions.split(",") if f.strip()}
+    else:
+        scope = set(by_fn.keys())
+
+    counts = {"improved": 0, "regressed": 0, "stable": 0, "recovering": 0, "baseline": 0}
+    total_energy_saved = 0.0
+    total_stack_saved = 0
+    improvement_pcts = []
+
+    for fn in scope:
+        fn_records = by_fn.get(fn, [])
+        if not fn_records:
+            counts["baseline"] += 1
+            continue
+
+        # Classify direction using worst_ns (primary metric)
+        worst_vals = [r["worst_ns"] for r in fn_records if "worst_ns" in r]
+        direction = _direction(worst_vals) if worst_vals else "baseline"
+        counts[direction] = counts.get(direction, 0) + 1
+
+        # Improvement % for improved functions
+        if direction == "improved" and len(worst_vals) >= 2:
+            pct = (worst_vals[0] - worst_vals[-1]) / max(abs(worst_vals[0]), 1e-9) * 100
+            improvement_pcts.append(pct)
+
+        # Energy delta (improvements only)
+        energy_vals = [r["energy_uws"] for r in fn_records if "energy_uws" in r]
+        if len(energy_vals) >= 2 and energy_vals[-1] < energy_vals[0]:
+            total_energy_saved += energy_vals[0] - energy_vals[-1]
+
+        # Stack delta (improvements only)
+        stack_vals = [r["stack_b"] for r in fn_records if "stack_b" in r]
+        if len(stack_vals) >= 2 and stack_vals[-1] < stack_vals[0]:
+            total_stack_saved += int(stack_vals[0] - stack_vals[-1])
+
+    # Build skills_used from --skill arg
+    skills_used = {}
+    if args.skill:
+        skills_used[args.skill] = 1
+
+    co_reasoning = getattr(args, "co_reasoning", 0) or 0
+
+    result = {
+        "functionsAnalyzed": len(scope),
+        "functionsImproved": counts["improved"],
+        "functionsRegressed": counts["regressed"],
+        "functionsStable": counts["stable"],
+        "functionsRecovering": counts["recovering"],
+        "functionsBaseline": counts["baseline"],
+        "improvementPctSum": round(sum(improvement_pcts), 2) if improvement_pcts else 0,
+        "improvedCount": len(improvement_pcts),
+        "totalEnergySavedUws": round(total_energy_saved, 2),
+        "totalStackSavedB": total_stack_saved,
+        "regressionsCaught": counts["recovering"] + counts["regressed"],
+        "coReasoningSessions": co_reasoning,
+        "skillsUsed": skills_used,
+    }
+    print(json.dumps(result, separators=(",", ":")))
+
+
 def main():
     parser = argparse.ArgumentParser(description="LOCI cumulative stats tracker")
     sub = parser.add_subparsers(dest="cmd")
@@ -444,6 +524,14 @@ def main():
     tl = sub.add_parser("trend-line")
     tl.add_argument("--function", required=True)
 
+    ei = sub.add_parser("export-impact")
+    ei.add_argument("--functions", default=None,
+                    help="Comma-separated function names to scope")
+    ei.add_argument("--skill", default=None,
+                    help="Current skill name for skillsUsed")
+    ei.add_argument("--co-reasoning", type=int, default=0,
+                    help="Co-reasoning sessions from this skill run")
+
     args = parser.parse_args()
     if args.cmd == "record":
         cmd_record(args)
@@ -457,6 +545,8 @@ def main():
         cmd_trend(args)
     elif args.cmd == "trend-line":
         cmd_trend_line(args)
+    elif args.cmd == "export-impact":
+        cmd_export_impact(args)
 
 
 if __name__ == "__main__":
