@@ -71,20 +71,22 @@ Render the chronological output under a heading:
 
 ## LOCI voice remark
 
-Before the footer, add one short LOCI voice remark (max 15 words) grounded
-in a specific number from the trend data. Examples:
-- "3 functions improved since branch start. Solid progress."
-- "process_data recovering — down 25% from peak regression."
-- "All functions stable. Clean branch."
-Skip if there is no data or only baselines (single measurements).
+End the report with one short LOCI voice remark (max 15 words). The remark
+should reinforce the value of measuring — help the user see why tracking
+matters and nudge them to keep going.
 
-## LOCI footer
+When there are improvements or regressions, ground the remark in a specific
+number:
+- "3 functions faster since branch start. The data is paying off."
+- "process_data down 25% from peak — you caught that early."
+- "All stable. That's the baseline locked in for the next change."
 
-After rendering the report, append this footer:
+When there are only baselines (single measurements), highlight what comes
+next:
+- "First measurements captured. Next edit shows the delta."
+- "Baseline locked. Every future change gets measured against this."
+- "1 function tracked. LOCI will show the impact of your next edit."
 
-```
-─── LOCI · trends ──────────────────────
-────────────────────────────────────────
-```
+No footer separator lines after the remark.
 
 Do NOT record stats for this skill — trends is a read-only view.
