@@ -82,9 +82,11 @@ For each check, record status (PASS / FAIL) and a detail string.
 | 10 | c++filt available | Read `cxxfilt_dir` from `loci-paths.json`, run `<cxxfilt_dir>/c++filt --version` | Exit code 0 |
 | 11 | session-init executable | `test -x <plugin-dir>/hooks/session-init.sh` | Exit code 0 |
 | 12 | hooks.json valid | `<plugin-dir>/hooks/hooks.json` parses as JSON | Valid JSON |
+| 13 | Quota not exceeded | If MCP tools are visible (check 1 passed), call `mcp__loci__loci_usage_for_period` with `from_ts` = 24h ago, `to_ts` = now (UTC ISO). Compare `total_tokens` against tier limit (free=30000, premium=300000, enterprise=1500000). User plan comes from the MCP response or default to free. | `total_tokens < tier_limit` |
 
 If `<venv-python>` is unavailable, checks 6, 7 automatically FAIL.
 If `loci-paths.json` is missing, check 10 automatically FAILs.
+If check 1 failed (MCP not visible), check 13 automatically FAILs with "MCP not connected — cannot check quota".
 
 ## Step 3: Collect stats
 
@@ -227,8 +229,9 @@ Generated: <YYYY-MM-DD HH:MM:SS UTC>
 | 10 | c++filt available | <PASS/FAIL> | <detail> |
 | 11 | session-init executable | <PASS/FAIL> | <detail> |
 | 12 | hooks.json valid | <PASS/FAIL> | <detail> |
+| 13 | Quota not exceeded | <PASS/FAIL> | <detail, e.g. "18,000 / 30,000 daily tokens (free)" or "LIMIT REACHED — 35,000 / 30,000"> |
 
-**Result: <N>/12 checks passed.**
+**Result: <N>/13 checks passed.**
 
 ## Reasoning
 

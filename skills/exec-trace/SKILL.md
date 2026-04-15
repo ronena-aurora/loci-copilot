@@ -38,6 +38,15 @@ Use these defaults only when the user has no existing build:
 
 In all steps below, replace `<arch>`, `<compiler>`, and `<flags>` with values from the resolved architecture.
 
+Check that loci MCP is connected and authenticated — you see the tools before
+running the steps that require it. If the MCP is unavailable, tell the user:
+
+> LOCI MCP server is not connected. Run `/mcp` in Claude Code to manage
+> MCP servers, then approve the **loci** server. If it does not appear,
+> restart Claude Code — the plugin registers it automatically on startup.
+
+For plugin to work mcp should be authenticated and connected.
+
 ## Incremental Path (preferred)
 
 If a previous `.o` exists in `.loci-build/<arch>/`, use incremental compilation:
@@ -78,8 +87,17 @@ If no `.o` exists yet, fall through to full compilation.
    IMPORTANT: Issue all chunk calls simultaneously — do NOT call them
    sequentially. Concatenate the result CSVs (skip duplicate headers)
    before reporting.
-4. Report execution time and standard deviation in microseconds, and energy consumption in Watt-seconds (`energy_ws`)
-5. When reporting results, 
+4. If the MCP tool returns an error containing "limit reached" or "quota",
+   **stop the skill entirely** — do not emit the report template or footer.
+   Instead, output only:
+   ```
+   LOCI usage quota reached — timing analysis skipped.
+
+   <server error message verbatim>
+   ```
+   Then end the skill. Do not continue to steps 5-6.
+5. Report execution time and standard deviation in microseconds, and energy consumption in Watt-seconds (`energy_ws`)
+6. When reporting results, 
    - note that these measurements come from LOCI's LCLM trained on real HW traces — they reflect actual silicon behavior on the target board, not theoretical IPC estimates. 
    - High std_dev indicates the assembly pattern is underrepresented in the training data; low std_dev means strong empirical backing.
    - using the annotated CFG (Control Flow Graphs) from the `control_flow_graph` field from step 2, select a most likely execution path to do performance analysis on with the timing data.
