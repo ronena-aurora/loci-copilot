@@ -184,6 +184,18 @@ very last thing printed — **only if N > 0**. If no functions were processed, d
 <venv-python> <plugin-dir>/lib/loci_stats.py record --skill stack-depth --functions <N> --mcp-calls 0 --co-reasoning 0
 ```
 
+**Record per-function measurements** (single Bash call for all entry functions).
+Capture the commit hash once, then pipe all measurements as JSONL via stdin:
+```
+COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)
+echo '<jsonl_records>' | <venv-python> <plugin-dir>/lib/loci_stats.py record-measurement --stdin --skill stack-depth --commit "$COMMIT"
+```
+Where `<jsonl_records>` is one JSON object per line for each entry function:
+```
+{"fn":"<func>","stack_b":<worst_case_depth>,"src":"<source_file>"}
+```
+Use the `worst_case_depth` value (in bytes) from the stack-depth JSON output.
+
 **Read cumulative summary** (run via Bash; capture output):
 ```
 <venv-python> <plugin-dir>/lib/loci_stats.py summary
