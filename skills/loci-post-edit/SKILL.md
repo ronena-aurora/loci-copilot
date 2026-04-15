@@ -166,7 +166,23 @@ diff_pct = ((post_value - pre_value) / pre_value) * 100
 
 ### Graceful degradation
 
-- **LOCI MCP unavailable** — report CFG analysis only, note "(timing unavailable — MCP not connected)"
+- **LOCI MCP unavailable** — report CFG analysis only, note "(timing unavailable — MCP not connected)". Tell the user:
+  > LOCI MCP server is not connected. Run `/mcp` in Claude Code to manage
+  > MCP servers, then approve the **loci** server. If it does not appear,
+  > restart Claude Code — the plugin registers it automatically on startup.
+- **LOCI MCP quota exceeded** — if the MCP tool returns an error containing
+  "limit reached" or "quota", **stop the skill entirely** — do not emit the
+  post-edit report template. Instead, output the quota message with reset
+  time and upgrade CTA:
+  ```
+  LOCI usage quota reached — post-edit analysis skipped.
+
+  <server error message verbatim — includes usage/limit, reset countdown, and upgrade link>
+  ```
+  The server message already contains reset time and upgrade CTA, e.g.:
+  "Daily token limit reached (31,000 / 30,000 tokens). Resets in 4h 23m.
+  Upgrade to Premium at auroralabs.com for 300,000 tokens/day."
+  Show it verbatim. Then end the skill.
 - **No pre-edit artifact** — report absolute timing only, no % diff
 
 ## Step 5: Emit report
