@@ -275,7 +275,10 @@ if ls "${WHEEL_DIR}"/*.whl 1>/dev/null 2>&1; then
     WHEEL_HASH=""
   fi
   MARKER_FILE="${VENV_DIR}/.loci-wheel-hash"
+  # Cache hit requires: wheel hash match + correct Python version + working import
+  CACHED_PYVER=$("$(_venv_python)" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null)
   if [ -f "$MARKER_FILE" ] && [ "$(cat "$MARKER_FILE" 2>/dev/null)" = "$WHEEL_HASH" ] \
+      && [ "$CACHED_PYVER" = "3.12" ] \
       && "$(_venv_python)" -c "from loci.service.asmslicer import asmslicer" 2>/dev/null; then
     ASM_ANALYZE_AVAILABLE=true
     echo -e "${GREEN}OK (cached)${NC}"
