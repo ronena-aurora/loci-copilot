@@ -9,14 +9,13 @@
 #   ./run_tests.sh --ble-root "C:\Playground\BLE"            # same, via CLI
 #   ./run_tests.sh --update-baselines       # regenerate regression baselines
 #
-# First run creates a Python 3.12 venv and installs the asmslicer wheel
-# from asm-analyze-wheels/. Subsequent runs reuse the cached venv.
+# First run creates a Python 3.12 venv and installs loci-service-asmslicer
+# from PyPI. Subsequent runs reuse the cached venv.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 VENV_DIR="${SCRIPT_DIR}/.venv"
-WHEEL_DIR="${SCRIPT_DIR}/asm-analyze-wheels"
 BOOTSTRAP_MARKER="${VENV_DIR}/.loci-test-ready"
 
 # ---------------------------------------------------------------------------
@@ -56,13 +55,9 @@ bootstrap() {
     exit 1
   fi
 
-  # Skip install if already bootstrapped with current wheel
-  local wheel_hash=""
-  if ls "${WHEEL_DIR}"/*.whl 1>/dev/null 2>&1; then
-    wheel_hash=$(md5sum "${WHEEL_DIR}"/*.whl 2>/dev/null | awk '{print $1}' | sort | md5sum | awk '{print $1}')
-  fi
-
-  if [ -f "$BOOTSTRAP_MARKER" ] && [ "$(cat "$BOOTSTRAP_MARKER" 2>/dev/null)" = "$wheel_hash" ]; then
+  # Skip install if already bootstrapped
+  if [ -f "$BOOTSTRAP_MARKER" ] \
+      && "$vpy" -c "from loci.service.asmslicer import asmslicer" 2>/dev/null; then
     return 0
   fi
 
@@ -73,10 +68,8 @@ bootstrap() {
   export UV_EXTRA_INDEX_URL=""
   export UV_INDEX_URL="https://pypi.org/simple/"
 
-  # asmslicer from local wheels
-  if ls "${WHEEL_DIR}"/*.whl 1>/dev/null 2>&1; then
-    uv pip install loci_service_asmslicer --find-links "${WHEEL_DIR}"
-  fi
+  # asmslicer from PyPI
+  uv pip install loci_service_asmslicer
 
   # Runtime + test deps
   uv pip install pandas pydot unicorn pytest pytest-timeout
@@ -94,7 +87,7 @@ bootstrap() {
   done
 
   # Write marker
-  echo "$wheel_hash" > "$BOOTSTRAP_MARKER"
+  echo "ok" > "$BOOTSTRAP_MARKER"
   echo "Environment ready."
 }
 
