@@ -14,7 +14,6 @@
 PLUGIN_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 STATE_DIR="${PLUGIN_DIR}/state"
 VENV_DIR="${PLUGIN_DIR}/.venv"
-WHEEL_DIR="${PLUGIN_DIR}/asm-analyze-wheels"
 SETUP_MARKER="${PLUGIN_DIR}/.setup-complete"
 
 IS_WINDOWS=false
@@ -179,7 +178,7 @@ _setup_venv() {
     uv venv --python 3.12 "$VENV_DIR" >/dev/null 2>&1 || return 1
 
     VIRTUAL_ENV="$VENV_DIR" uv pip install loci_service_asmslicer \
-        --find-links "${WHEEL_DIR}" >/dev/null 2>&1 || return 1
+        >/dev/null 2>&1 || return 1
     VIRTUAL_ENV="$VENV_DIR" uv pip install unicorn pandas pydot >/dev/null 2>&1 || true
 
     # Resolve undeclared transitive deps (up to 5 rounds)
@@ -240,15 +239,13 @@ _first_time_setup() {
     fi
 
     # ── venv + asm-analyze (non-fatal) ───────────────────────────────────
-    if ls "${WHEEL_DIR}"/*.whl 1>/dev/null 2>&1; then
-        if _install_uv && _setup_venv; then
-            printf 'LOCI: asm-analyze ready\n'
-        else
-            printf 'LOCI: asm-analyze unavailable (will retry next session)\n'
-            # Don't write marker — retry on next session
-            rm -rf "$lock" 2>/dev/null; trap - EXIT
-            return 0
-        fi
+    if _install_uv && _setup_venv; then
+        printf 'LOCI: asm-analyze ready\n'
+    else
+        printf 'LOCI: asm-analyze unavailable (will retry next session)\n'
+        # Don't write marker — retry on next session
+        rm -rf "$lock" 2>/dev/null; trap - EXIT
+        return 0
     fi
 
     echo "$ver" > "$SETUP_MARKER"

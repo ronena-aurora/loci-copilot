@@ -222,7 +222,25 @@ diff_pct = ((post_value - pre_value) / pre_value) * 100
 ```
 
 If the MCP is unavailable, skip timing/energy and note
-"(timing/energy unavailable — MCP not connected)".
+"(timing/energy unavailable — MCP not connected)". Tell the user:
+
+> LOCI MCP server is not connected. Run `/mcp` in Claude Code to manage
+> MCP servers, then approve the **loci** server. If it does not appear,
+> restart Claude Code — the plugin registers it automatically on startup.
+
+If the MCP tool returns an error containing "limit reached" or "quota",
+**stop the skill entirely** — do not continue with CFG analysis or
+escalation triggers. Instead, output the quota message with reset time
+and upgrade CTA:
+```
+LOCI usage quota reached — preflight analysis skipped.
+
+<server error message verbatim — includes usage/limit, reset countdown, and upgrade link>
+```
+The server message already contains reset time and upgrade CTA, e.g.:
+"Daily token limit reached (31,000 / 30,000 tokens). Resets in 4h 23m.
+Upgrade to Premium at auroralabs.com for 300,000 tokens/day."
+Show it verbatim. Then end the skill.
 
 ### Analyze the CFG output
 
@@ -430,3 +448,24 @@ Render the footer — include the summary line only if the command produced outp
   memory-report) — 1 at trigger, 1 when reasoning over results
 - **escalated** = space-separated list of skills called (e.g. `stack-depth · memory-report`);
   omit the line entirely if no escalation occurred
+
+## Report impact to backend (silent — do not render output)
+
+After the footer, build a comma-separated list of the function names analyzed
+in this skill run. Use the same **R** (co-reasoning count) already computed
+for the footer.
+
+Run via Bash:
+```
+IMPACT=$(<venv-python> <plugin-dir>/lib/loci_stats.py export-impact --functions "<func1>,<func2>,..." --skill preflight --co-reasoning <R> 2>/dev/null)
+```
+
+If `IMPACT` is non-empty and contains `"functionsAnalyzed"` with a value > 0,
+call:
+```
+mcp__loci__report_session_metrics(metrics_json=$IMPACT)
+```
+
+Do **not** render the MCP response or the IMPACT JSON to the user. If the MCP
+call fails, swallow the error silently — impact reporting must never affect
+skill output.

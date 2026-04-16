@@ -46,12 +46,28 @@ Based on Step 0, render the appropriate status block.
 
 ### When fully ready
 
+If MCP is connected, call `mcp__loci__loci_usage_for_period` with
+`from_ts` = 24 hours ago (UTC ISO string) and `to_ts` = now (UTC ISO string)
+to get the user's current token usage. Use the result's `total_tokens` field
+to show quota status.
+
+Tier limits for reference:
+- free: 30,000 daily tokens
+- premium: 300,000 daily tokens
+- enterprise: 1,500,000 daily tokens
+
 ```
 ## Environment
   Target:    <loci_target> (<mapped CPU name>)
   Compiler:  <compiler>
   Build:     <build_system>
   MCP:       connected
+  Quota:     <total_tokens> / <tier_limit> daily tokens (<plan>)
+```
+
+If `total_tokens >= tier_limit`, show instead:
+```
+  Quota:     <total_tokens> / <tier_limit> daily tokens — LIMIT REACHED (<plan>)
 ```
 
 Map LOCI target to CPU name:

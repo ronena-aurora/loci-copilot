@@ -14,7 +14,7 @@
   "plugins": [
     {
       "name": "loci",
-      "version": "0.1.18",
+      "version": "0.1.23",
       "description": "Execution-aware analysis for C/C++/Rust — hardware-grounded timing, energy, stack depth, memory, and security from compiled binaries. Real silicon traces, not simulated.",
       "source": "./",
       "strict": false,

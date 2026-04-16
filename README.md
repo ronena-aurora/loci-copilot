@@ -42,4 +42,4 @@ LOCI also runs automatically:
 
 ## LOCI MCP
 
-Connects to `https://dev.local.mcp.loci-dev.net/mcp/v1` for hardware-grounded timing and energy predictions from real silicon traces.
+Connects to `https://loci-ai.mcp.loci-dev.net/mcp/v1` for hardware-grounded timing and energy predictions from real silicon traces.

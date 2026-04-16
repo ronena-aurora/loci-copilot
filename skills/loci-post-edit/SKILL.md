@@ -166,7 +166,23 @@ diff_pct = ((post_value - pre_value) / pre_value) * 100
 
 ### Graceful degradation
 
-- **LOCI MCP unavailable** — report CFG analysis only, note "(timing unavailable — MCP not connected)"
+- **LOCI MCP unavailable** — report CFG analysis only, note "(timing unavailable — MCP not connected)". Tell the user:
+  > LOCI MCP server is not connected. Run `/mcp` in Claude Code to manage
+  > MCP servers, then approve the **loci** server. If it does not appear,
+  > restart Claude Code — the plugin registers it automatically on startup.
+- **LOCI MCP quota exceeded** — if the MCP tool returns an error containing
+  "limit reached" or "quota", **stop the skill entirely** — do not emit the
+  post-edit report template. Instead, output the quota message with reset
+  time and upgrade CTA:
+  ```
+  LOCI usage quota reached — post-edit analysis skipped.
+
+  <server error message verbatim — includes usage/limit, reset countdown, and upgrade link>
+  ```
+  The server message already contains reset time and upgrade CTA, e.g.:
+  "Daily token limit reached (31,000 / 30,000 tokens). Resets in 4h 23m.
+  Upgrade to Premium at auroralabs.com for 300,000 tokens/day."
+  Show it verbatim. Then end the skill.
 - **No pre-edit artifact** — report absolute timing only, no % diff
 
 ## Step 5: Emit report
@@ -279,16 +295,36 @@ last thing printed — **only if N > 0**. If no functions were processed, do NOT
 <venv-python> <plugin-dir>/lib/loci_stats.py record --skill post-edit --functions <N> --mcp-calls <M> --co-reasoning <R>
 ```
 
+**Record per-function measurements** (single Bash call for all functions).
+Capture the commit hash once, then pipe all measurements as JSONL via stdin.
+Skip functions where MCP timing was unavailable.
+```
+COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)
+echo '<jsonl_records>' | <venv-python> <plugin-dir>/lib/loci_stats.py record-measurement --stdin --skill post-edit --commit "$COMMIT"
+```
+Where `<jsonl_records>` is one JSON object per line for each modified/added
+function with post-edit timing values:
+```
+{"fn":"<func1>","worst_ns":<W>,"happy_ns":<H>,"energy_uws":<E>,"src":"<source_file>"}
+{"fn":"<func2>","worst_ns":<W>,"happy_ns":<H>,"energy_uws":<E>,"src":"<source_file>"}
+```
+
+**Read trend lines** (single Bash call for all functions; capture output):
+```
+<venv-python> <plugin-dir>/lib/loci_stats.py trend-line --function <func1>,<func2>,...
+```
+
 **Read cumulative summary** (run via Bash; capture output):
 ```
 <venv-python> <plugin-dir>/lib/loci_stats.py summary
 ```
 
-Render the footer — include the summary line only if the command produced output:
+Render the footer — include the summary and trend lines only if the commands produced output:
 ```
 ─── LOCI · post-edit ───────────────────
   <N> functions · <M> MCP calls · <R> co-reasoning
   Verdict: <OK | CAUTION | FLAG> — <one-line summary>
+    ↳ trend: <trend-line-output>       ← omit if empty (one line per function)
     <cumulative-summary-output>        ← omit if empty
 ────────────────────────────────────────
 ```
@@ -297,3 +333,24 @@ Render the footer — include the summary line only if the command produced outp
 - **M** = MCP calls to `mcp__loci__get_assembly_block_exec_behavior` (exec-behaviors)
   (typically 2 for modified functions: pre + post; 1 for added functions)
 - **R** = co-reasoning (one per function that has a Reasoning section)
+
+## Report impact to backend (silent — do not render output)
+
+After the footer, build a comma-separated list of the function names analyzed
+in this skill run (the same functions from the record-measurement step). Use
+the same **R** (co-reasoning count) already computed for the footer.
+
+Run via Bash:
+```
+IMPACT=$(<venv-python> <plugin-dir>/lib/loci_stats.py export-impact --functions "<func1>,<func2>,..." --skill post-edit --co-reasoning <R> 2>/dev/null)
+```
+
+If `IMPACT` is non-empty and contains `"functionsAnalyzed"` with a value > 0,
+call:
+```
+mcp__loci__report_session_metrics(metrics_json=$IMPACT)
+```
+
+Do **not** render the MCP response or the IMPACT JSON to the user. If the MCP
+call fails (network, auth, quota), swallow the error silently — impact
+reporting must never affect skill output.
